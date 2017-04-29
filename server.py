@@ -1,7 +1,7 @@
 import socket
 
 # Recebe no porto SERVER PORT os comandos "IAM <nome>", "HELLO",
-#    "HELLOTO <nome>" ou "KILLSERVER" 
+#    "HELLOTO <nome>" ou "KILLSERVER"
 # "IAM <nome>" - regista um cliente como <nome>
 # "HELLO" - responde HELLO ou HELLO <nome> se o cliente estiver registado
 # "HELLOTO <nome>" - envia HELLO para o cliente <nome>
@@ -25,11 +25,11 @@ def acknowledge(addr):
 		print("OK\n")
 	else:
 		respond_msg = "OK" + "\n"
-		server.sendto(respond_msg.encode(), addrs[cmds[1]]) 
+		server.sendto(respond_msg.encode(), addrs[cmds[1]])
 
 def error(message,addr):
 	print("msg:"+message)
-	respond_msg = "NOK: " + message 
+	respond_msg = "NOK: " + message
   	server.sendto(respond_msg,addr)
 
 def register_client(name,addr):
@@ -64,8 +64,8 @@ def return_list(addr):
 		respond_msg = "LSTR: "
 
 		for key in status:
-			print "key ",key
-			print "status ", status[key]
+			print("key {}".format(key))
+			print("status {}".format(status[key]))
 			respond_msg = respond_msg + key + ":" + status[key] + ";"
 
 		server.sendto(respond_msg.encode(),addr)
@@ -80,15 +80,15 @@ def invite(addr, dest):
 				status[clients[addr]]="occupied"
 				daddr = addrs[dest]
 				respond_msg="INV " + clients[addr] + " "+ dest
-				print respond_msg
+				print(respond_msg)
 				server.sendto(respond_msg.encode(),daddr)
 
 			else:
 				error("User not available", addr)
-				
+
 		else:
 			error("Can't send more invites", addr)
-					
+
 	else:
 		error("User does not exist", addr)
 
@@ -124,7 +124,7 @@ def endGame(src,dest, pos, msg):
 while True:
   (msg,addr) = server.recvfrom(1024)
   cmds = msg.split()
-  print cmds[0];
+  print(cmds[0])
   if(cmds[0]=="REG"):
     register_client(cmds[1],addr)
   elif(cmds[0]=="EXIT"):
@@ -148,4 +148,3 @@ while True:
     respond_error(addr)
 
 server.close()
-

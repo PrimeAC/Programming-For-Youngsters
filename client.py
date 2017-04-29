@@ -15,7 +15,7 @@ inputs = [sock, sys.stdin]
 #FUNCOES DE CADA OPERACAO
 def acknowledge(dest):
   respond_msg = "OK " + dest + "\n"
-  sock.sendto(respond_msg.encode(), (SERVER_IP, SERVER_PORT)) 
+  sock.sendto(respond_msg.encode(), (SERVER_IP, SERVER_PORT))
 
 def replyInvitation(sender, to, reply):
 
@@ -30,12 +30,12 @@ def replyInvitation(sender, to, reply):
 def readList(msg):
   i=0
   aux=""
-  print "Message received from server:"
-  print "LSTR:"
+  print("Message received from server:")
+  print("LSTR:")
   while i < len(msg):
 	 aux=aux+msg[i]
 	 if msg[i] == ";":
-		print aux
+		print(aux)
 		aux=""
 	 i+=1
 
@@ -61,10 +61,10 @@ def makeMove(board, letter, move):
 		 	board[int(move)] = letter
 		 	return True
 		else:
-			print "Try again, invalid position"
+			print("Try again, invalid position")
 			return False
 	else:
-			print "Try again, invalid position"
+			print("Try again, invalid position")
 			return False
 
 def isWinner(bo, le):
@@ -123,24 +123,24 @@ while True:
 
 			if arg[0] == "EXIT":
 				sys.exit()
-			
+
 			if arg[0] == "REG":
 				if length != 2:
-					print "Invalid arguments. Try again with two arguments"
+					print("Invalid arguments. Try again with two arguments")
 					break
 				name = arg[1]
-				print "entrei no reg e associei o nome"
+				print("entrei no reg e associei o nome")
 
 			if arg[0] == "INV":
 				if length != 2:
-					print "Invalid arguments. Try again with INV destination"
+					print("Invalid arguments. Try again with INV destination")
 					break
 				msg = arg[0] + " "+ name+" "+arg[1]
-				print msg
+				print(msg)
 
 			if arg[0] == "MOV":
 				if length != 2:
-					print "Invalid arguments. Try again with two arguments"
+					print("Invalid arguments. Try again with two arguments")
 					break
 				#msg = msg.split()
 				move = arg[1]
@@ -157,26 +157,26 @@ while True:
 								gameIsPlaying = False
 								flag = 0
 								msg = "END"+" "+name+" "+oponent+" "+arg[1]+" V"
-						
+
 							else:
 
 								if isBoardFull(theBoard):
 									drawBoard(theBoard)
 									print('The game is a tie!')
-									msg = "END"+" "+name+" "+oponent+" "+arg[1]+" D"
+									msg = "END" + " " + name + " " + oponent + " " + arg[1] + " D"
 									flag = 0
-									
+
 
 								else:
 									turn = 'notYourTurn'
-									
+
 						else:
 							break
 
 					else:
-						print "Not your turn"
+						print("Not your turn")
 						break
-	
+
 			# envia mensagem da consola para o servidor
 			sock.sendto(msg.encode(),(SERVER_IP,SERVER_PORT))
 			# i == sock - o servidor enviou uma mensagem para o socket
@@ -268,13 +268,13 @@ while True:
 					break
 
 			if cmds[0] == "NOK:":
-				print sub
+				print(sub)
 				break
 
 
 			if cmds[0] == "EXIT":
-				print "Server is down"
+				print("Server is down")
 				sys.exit()
-					
 
-			print "Message received from server:", cmds[0]
+
+			print('Message received from server: "{}"'.format(cmds[0]))
