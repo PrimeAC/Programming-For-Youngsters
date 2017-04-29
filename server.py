@@ -120,7 +120,7 @@ def endGame(src,dest, pos, msg):
 
 
 #CORPO PRINCIPAL
-
+print("Starting server on port {}...".format(SERVER_PORT))
 while True:
     (msg,addr) = server.recvfrom(1024)
     cmds = msg.split()
