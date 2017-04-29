@@ -54,15 +54,26 @@ def drawBoard(board):
      #print('   |   |')
 
 def makeMove(board, letter, move):
-    if ord(move) <= 57 and ord(move) > 48:  #ascii para os valores entre 1 e 9
+    # Make sure that "move" is a number
+    try:
+        move_number = int(move)
+    except ValueError:
+        print('"{}" is an invalid input.'
+                    ' Your input should be a number from 1 to 9'.format(move))
+        return False
+
+    # Make sure that the number is within range
+    if 1 <= move_number <= 9:
         if board[int(move)] == " ":
              board[int(move)] = letter
              return True
         else:
-            print("Try again, invalid position")
+            print('Postion {} is already occupied,'
+                                'please try another one'.format(move_number))
             return False
     else:
-            print("Try again, invalid position")
+            print('"{}" is an invalid input number. The provided number should'
+            ' be from 1 to 9'.format(move_number))
             return False
 
 def isWinner(bo, le):
@@ -178,6 +189,7 @@ while True:
             # i == sock - o servidor enviou uma mensagem para o socket
         elif i == sock:
             (msg,addr) = sock.recvfrom(1024)
+            msg = msg.decode()
             sub = msg
             cmds = msg.split()
             if cmds[0] == "MOV":

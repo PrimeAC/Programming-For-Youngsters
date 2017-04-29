@@ -30,7 +30,7 @@ def acknowledge(addr):
 def error(message,addr):
     print("msg:"+message)
     respond_msg = "NOK: " + message
-    server.sendto(respond_msg,addr)
+    server.sendto(respond_msg.encode(), addr)
 
 def register_client(name,addr):
     # se o nome nao existe e o endereco nao esta a ser usado
@@ -57,7 +57,7 @@ def remove_client(addr):
 def end_clients():
     for addr in clients:
         respond_msg = "EXIT"
-        server.sendto(respond_msg,addr)
+        server.sendto(respond_msg.encode(), addr)
 
 def return_list(addr):
     if addr in clients:
@@ -123,6 +123,7 @@ def endGame(src,dest, pos, msg):
 print("Starting server on port {}...".format(SERVER_PORT))
 while True:
     (msg,addr) = server.recvfrom(1024)
+    msg = msg.decode()
     cmds = msg.split()
     print(cmds[0])
     if(cmds[0]=="REG"):
