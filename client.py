@@ -42,15 +42,19 @@ def drawBoard(board):
     # This function prints out the board that it was passed.
 
      # "board" is a list of 10 strings representing the board (ignore index 0)    print('   |   |')
-     print(' ' + board[1] + ' | ' + board[2] + ' | ' + board[3])
+     print(' ' + board[1] + ' | ' + board[2] + ' | ' + board[3] + ' | ' + board[4])
      #print('   |   |')
-     print('---+---+---')
+     print('---+---+---+---')
      #print('   |   |')
-     print(' ' + board[4] + ' | ' + board[5] + ' | ' + board[6])
+     print(' ' + board[5] + ' | ' + board[6] + ' | ' + board[7] + ' | ' + board[8])
      #print('   |   |')
-     print('---+---+---')
+     print('---+---+---+---')
      #print('   |   |')
-     print(' ' + board[7] + ' | ' + board[8] + ' | ' + board[9])
+     print(' ' + board[9] + ' | ' + board[10] + ' | ' + board[11] + ' | ' + board[12])
+     #print('   |   |')
+     print('---+---+---+---')
+     #print('   |   |')
+     print(' ' + board[13] + ' | ' + board[14] + ' | ' + board[15] + ' | ' + board[16])
      #print('   |   |')
 
 def makeMove(board, letter, move):
@@ -59,11 +63,11 @@ def makeMove(board, letter, move):
         move_number = int(move)
     except ValueError:
         print('"{}" is an invalid input.'
-                    ' Your input should be a number from 1 to 9'.format(move))
+                    ' Your input should be a number from 1 to 16'.format(move))
         return False
 
     # Make sure that the number is within range
-    if 1 <= move_number <= 9:
+    if 1 <= move_number <= 16:
         if board[int(move)] == " ":
              board[int(move)] = letter
              return True
@@ -73,20 +77,21 @@ def makeMove(board, letter, move):
             return False
     else:
             print('"{}" is an invalid input number. The provided number should'
-            ' be from 1 to 9'.format(move_number))
+            ' be from 1 to 16'.format(move_number))
             return False
 
 def isWinner(bo, le):
      # Given a board and a player's letter, this function returns True if that player has won.
-     # We use bo instead of board and le instead of letter so we don’t have to type as much.
-     return ((bo[7] == le and bo[8] == le and bo[9] == le) or # across the top
-     (bo[4] == le and bo[5] == le and bo[6] == le) or # across the middle
-     (bo[1] == le and bo[2] == le and bo[3] == le) or # across the bottom
-     (bo[7] == le and bo[4] == le and bo[1] == le) or # down the left side
-     (bo[8] == le and bo[5] == le and bo[2] == le) or # down the middle
-     (bo[9] == le and bo[6] == le and bo[3] == le) or # down the right side
-     (bo[7] == le and bo[5] == le and bo[3] == le) or # diagonal
-     (bo[9] == le and bo[5] == le and bo[1] == le)) # diagonal
+     # We use bo instead of board and le instead of letter so we don’t have to type as much.	
+     return ((bo[7] == le and bo[8] == le and bo[9] == le and bo[10] == le) or # across the top
+     (bo[4] == le and bo[5] == le and bo[6] == le and bo[7] == le) or # across the upper middle
+     (bo[1] == le and bo[2] == le and bo[3] == le and bo[4] == le) or # across the bottom
+     (bo[13] == le and bo[9] == le and bo[5] == le and bo[1] == le) or # down the left side
+     (bo[14] == le and bo[10] == le and bo[6] == le and bo[2] == le) or # down the middle left side
+     (bo[15] == le and bo[11] == le and bo[7] == le and bo[3] == le) or # down the middle right side
+     (bo[16] == le and bo[12] == le and bo[8] == le and bo[4] == le) or # down the right side
+     (bo[13] == le and bo[9] == le and bo[7] == le and bo[4] == le) or # diagonal
+     (bo[16] == le and bo[11] == le and bo[6] == le and bo[1] == le)) # diagonal
 
 def getBoardCopy(board):
      # Make a duplicate of the board list and return it the duplicate.
@@ -235,7 +240,7 @@ while True:
 
                 if msg == "Y\n":
                     turn='notYourTurn'
-                    theBoard = [' '] * 10
+                    theBoard = [' '] * 17
                     player1Letter, player2Letter = ['O', 'X']
                     gameIsPlaying = True
                     flag = 1
@@ -249,7 +254,7 @@ while True:
                 acknowledge(cmds[1])
                 if cmds[2] == "accepted":
                     oponent = cmds[1]
-                    theBoard = [' '] * 10
+                    theBoard = [' '] * 17
                     player1Letter, player2Letter = ['X', 'O']
                     turn="yourTurn"
                     gameIsPlaying = True
