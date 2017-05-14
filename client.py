@@ -7,6 +7,8 @@ import select
 SERVER_PORT = 5005
 SERVER_IP   = '127.0.0.1'
 
+playermoves = []
+
 sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 
 # o select quer ficar a espera de ler o socket e ler do stdin (consola)
@@ -66,6 +68,8 @@ def makeMove(board, letter, move):
     if 1 <= move_number <= 9:
         if board[int(move)] == " ":
              board[int(move)] = letter
+             playermoves.append(int(move))
+             print(playermoves)
              return True
         else:
             print('Postion {} is already occupied,'
@@ -108,6 +112,14 @@ def isBoardFull(board):
                 return False
      return True
 
+
+def deleteOldMove(board):
+	#deletes moves with more than 3 turns
+	print(len(playermoves))
+	if len(playermoves) == 7:
+		board[int(playermoves[0])] = " "
+		playermoves.pop(0)	#deletes the oldest move
+		print(playermoves)
 
 
 #CORPO PRINCIPAL
@@ -153,7 +165,7 @@ while True:
                 move = arg[1]
                 if gameIsPlaying:
                     if turn == 'yourTurn':
-
+                    	deleteOldMove(theBoard)
                         if makeMove(theBoard, player1Letter, move):
                             flag=1
                             msg = arg[0]+" "+name+" "+oponent+" "+arg[1]
@@ -161,6 +173,7 @@ while True:
                                 #ALTERAR
                                 drawBoard(theBoard)
                                 print('Hooray! You have won the game!')
+                                playermoves = []
                                 gameIsPlaying = False
                                 flag = 0
                                 msg = "END"+" "+name+" "+oponent+" "+arg[1]+" V"
@@ -172,6 +185,7 @@ while True:
                                     print('The game is a tie!')
                                     msg = "END" + " " + name + " " + oponent + " " + arg[1] + " D"
                                     flag = 0
+                                    playermoves = []
 
 
                                 else:
