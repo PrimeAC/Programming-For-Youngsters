@@ -176,6 +176,7 @@ while True:
 
                                 else:
                                     turn = 'notYourTurn'
+                                    print(turn)
 
                         else:
                             break
@@ -216,6 +217,7 @@ while True:
                                 break
                             else:
                                 turn = 'yourTurn'
+                                print(turn)
                                 break
 
                     else:
@@ -238,6 +240,7 @@ while True:
                     theBoard = [' '] * 10
                     player1Letter, player2Letter = ['O', 'X']
                     gameIsPlaying = True
+                    print(turn)
                     flag = 1
                     oponent = cmds[1]
 
@@ -253,6 +256,7 @@ while True:
                     player1Letter, player2Letter = ['X', 'O']
                     turn="yourTurn"
                     gameIsPlaying = True
+                    print(turn)
                     flag = 1
                 break
 
