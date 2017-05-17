@@ -56,6 +56,10 @@ def convidarJogadorSTDIN(comprimentoMensagem, comandos):
 		mensagemErro = "Argumentos invalidos. Convide novamente o jogador."
 		error(mensagemErro)
 		return False
+	elif registado == False:
+		mensagemErro = "Tem que se registar primeiro para convidar um jogador."
+		error(mensagemErro)
+		return False		
 	return True
 
 def listarJogadoresSTDIN(comprimentoMensagem):
@@ -84,6 +88,11 @@ def jogadaValidaSTDIN(comprimentoMensagem, comandos):
 		mensagemErro = "O quadrado em que jogou esta fora dos limites do tabuleiro."
 		error(mensagemErro)
 		return False
+	# Erro caso não esteja a jogar
+	elif aJogar == False:
+		mensagemErro = "Nao pode jogar, tem que convidar um jogador primeiro."
+		error(mensagemErro)
+		return False	
 	# Erro caso o não seja a vez do jogador efectuar a jogada
 	elif myTurn == False:
 		mensagemErro = "Espere pela sua vez para jogar"
@@ -109,41 +118,42 @@ def listarJogadoresSOCKET(mensagem):
 	print(listarJogadores)
 	return
 
-def conviteJogadorSOCKET(jogadorConvida, jogadorConvidado):
+def conviteJogadorSOCKET(tabuleiro, jogadorConvida, jogadorConvidado):
+	global myTurn, aJogar, rival									# Variáveis globais a serem alteradas
 	print("Recebeu um convite de " + jogadorConvida + ". Para aceitar o jogo digite [S], para recusar [N].")
 	# Resposta introduzida pelo jogador convidado
 	respostaConvite = sys.stdin.readline().replace("\n", "")
 	# Se a reposta for válida, "S" ou "N", uma mensagem vai ser enviada ao servidor
 	if respostaConvite == "S":
 		rival = jogadorConvida 										# Jogador rival é quem fez o convite
-		meuSimbolo, rivalSimbolo = [PECA_X, PECA_O]        # Meu símbolo - "X"   |   Símbolo rival - "O"
-		aJogar = True                                      # Flag que indica se está a ser jogado um jogo ou não
 		print("\nVez do seu adversario jogar.")
-		tabuleiro = desenharTabuleiro(tabuleiro)            # Desenhar o tabuleiro inicial
+		desenharTabuleiro(tabuleiro)            				# Desenhar o tabuleiro inicial
 		mensagem = "RespostaConvite " + jogadorConvidado + " " + jogadorConvida + " aceitou"
+		aJogar = True 													# Flag que indica que o jogo está a decorrer
+		myTurn = False 												# Flag que indica a vez de jogar
 	# Se a resposta do jogador convidado for "N"
 	elif respostaConvite == "N":
 		mensagem = "RespostaConvite " + jogadorConvidado + " " + jogadorConvida + " recusou"
 	else:
 		mensagemErro = "Introduziu incorrectamente a resposta."
 		error(mensagemErro)
-		conviteJogadorSOCKET(jogadorConvida, jogadorConvidado)
+		conviteJogadorSOCKET(tabuleiro, jogadorConvida, jogadorConvidado)
 		return
 	cliente.sendto(mensagem.encode(), (IP_SERVIDOR, PORTO_SERVIDOR))
-	return tabuleiro
+	return
 
 def respostaConviteSOCKET(jogadorConvidado, respostaConvite):
+	global myTurn, aJogar, rival									# Variáveis globais a serem alteradas
 	print("O jogador " + jogadorConvidado + " " + respostaConvite + " o seu convite.")
 	# Se a resposta do jogador convidado for "S", ou o convite foi aceite
 	if respostaConvite == "aceitou":
 		rival = jogadorConvidado 									# Jogador rival é quem fez o convite
 		tabuleiro = [' '] * TAMANHO_TABULEIRO       			# Tabuleiro
-		rivalSimbolo, meuSimbolo = [PECA_X, PECA_O]        # Meu símbolo - "O"   |   Símbolo rival - "X"
-		aJogar = True                                      # Flag que indica se está a ser jogado um jogo ou não
 		print("\nSua vez de jogar.")
 		desenharTabuleiro(tabuleiro)                			# Desenhar o tabuleiro inicial
-		return True 													# Sua vez de jogar
-	return False														
+		myTurn = True 													# Flag que indica a vez de jogar
+		aJogar = True 													# Flag que indica que o jogo está a decorrer
+	return
 
 def desenharTabuleiro(tabuleiro):
 	tabuleiroDesenho = "\n "
@@ -164,16 +174,18 @@ def desenharTabuleiro(tabuleiro):
 				# Prepara uma nova linha
 				tabuleiroDesenho = ""
 	print("\n")
-	return tabuleiroDesenho
+	return
 
 def jogar(tabuleiro, peca, posicaoTabuleiro):
+	global myTurn														# Variável global a ser alterada
 	if tabuleiro[posicaoTabuleiro] == " ":
 		tabuleiro[posicaoTabuleiro] = peca
+		desenharTabuleiro(tabuleiro)
 		myTurn = False
 	else:
-		mensagemErro = "O local onde jogou ja contem uma peca. Jogue noutro sitio"
-		error(mensagemErro)
-	print(tabuleiro)
+		if myTurn == True:
+			mensagemErro = "O local onde jogou ja contem uma peca. Jogue noutro sitio"
+			error(mensagemErro)
 	return
 
 
@@ -242,7 +254,9 @@ def jogar(tabuleiro, peca, posicaoTabuleiro):
 
 
 # CORPO PRINCIPAL
-myTurn = False													# Meu turno
+registado = False												# Variável que indica se está registado ou não
+aJogar = False													# Variável que indica se se está a jogar ou não
+rival = ""														# Jogador adversário
 tabuleiro = [' '] * TAMANHO_TABULEIRO       			# Tabuleiro
 
 while True:
@@ -261,6 +275,8 @@ while True:
 				success = registarClienteSTDIN(comprimentoMensagem)
 				if success == False:
 					break
+				else:
+					registado = True
 			elif comandos[0] == "Listar":
 				success = listarJogadoresSTDIN(comprimentoMensagem)
 				if success == False:
@@ -272,10 +288,12 @@ while True:
 			elif comandos[0] == "Jogar":
 				success = jogadaValidaSTDIN(comprimentoMensagem, comandos)
 				if success == False:
+					print("MY " + str(myTurn))
 					break
 				else:
 					posicaoTabuleiro = int(comandos[1])
 					jogar(tabuleiro, PECA_X, posicaoTabuleiro)
+					mensagem = mensagem + rival
 
 			cliente.sendto(mensagem.encode(), (IP_SERVIDOR, PORTO_SERVIDOR))
 
@@ -295,7 +313,7 @@ while True:
 			elif comandos[0] == "Convidar":
 				jogadorConvida = comandos[1]
 				jogadorConvidado = comandos[2]
-				conviteJogadorSOCKET(jogadorConvida, jogadorConvidado)
+				conviteJogadorSOCKET(tabuleiro, jogadorConvida, jogadorConvidado)
 				break
 			elif comandos[0] == "RespostaConvite":
 				jogadorConvidado = comandos[1]
@@ -303,6 +321,11 @@ while True:
 				myTurn = respostaConviteSOCKET(jogadorConvidado, respostaConvite)
 				acknowledge(jogadorConvidado)
 				break
+			elif comandos[0] == "Jogar":
+				posicaoTabuleiro = comandos[1]
+				print("OTH " + str(myTurn))
+				jogar(tabuleiro, PECA_O, int(posicaoTabuleiro))
+				myTurn = True
 			elif comandos[0] == "Sair":
 				sys.exit()
 

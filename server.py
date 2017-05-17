@@ -116,6 +116,12 @@ def respostaConvite(jogadorConvidado, jogadorConvida, resposta):
     servidor.sendto(mensagemResposta.encode(), enderecoConvida)
     return
 
+def jogar(posicaoTabuleiro, rival):
+    enderecoRival = enderecos[rival]
+    mensagem = "Jogar " + posicaoTabuleiro
+    servidor.sendto(mensagem.encode(), enderecoRival)
+    return
+
 
 
 
@@ -179,7 +185,10 @@ while True:
         jogadorConvida = comandos[2]
         resposta = comandos[3]
         respostaConvite(jogadorConvidado, jogadorConvida, resposta)
-    #elif comandos[0] == "Movimentar":
+    elif comandos[0] == "Jogar":
+        posicaoTabuleiro = comandos[1]
+        rival = comandos[2]
+        jogar(posicaoTabuleiro, rival)
 
 
 
