@@ -10,7 +10,7 @@ import select
 
 PORTO_SERVIDOR = 5005
 IP_SERVIDOR = '127.0.0.1'
-TAMANHO_TABULEIRO = 16
+TAMANHO_TABULEIRO = 4
 PECA_X = "X"
 PECA_O = "O"
 
@@ -134,7 +134,7 @@ def conviteJogadorSOCKET(tabuleiro, jogadorConvida, jogadorConvidado):
 	# Se a reposta for válida, "S" ou "N", uma mensagem vai ser enviada ao servidor
 	if respostaConvite == "S":
 		rival = jogadorConvida 										# Jogador rival é quem fez o convite
-		desenharTabuleiro(tabuleiro)            				# Desenhar o tabuleiro inicial
+		desenharTabuleiro(tabuleiro, TAMANHO_TABULEIRO)            				# Desenhar o tabuleiro inicial
 		mensagem = "RespostaConvite " + jogadorConvidado + " " + jogadorConvida + " aceitou"
 		aJogar = True 													# Flag que indica que o jogo está a decorrer
 	# Se a resposta do jogador convidado for "N"
@@ -156,26 +156,32 @@ def respostaConviteSOCKET(jogadorConvidado, respostaConvite):
 		rival = jogadorConvidado 									# Jogador rival é quem fez o convite
 		myTurn = True 													# Flag que indica a vez de jogar
 		aJogar = True 													# Flag que indica que o jogo está a decorrer
-		tabuleiro = [' '] * TAMANHO_TABULEIRO       			# Tabuleiro
-		desenharTabuleiro(tabuleiro)                			# Desenhar o tabuleiro inicial
+		tabuleiro = [[0 for x in range(TAMANHO_TABULEIRO)] for y in range(TAMANHO_TABULEIRO)] 
+		for i in range(0, TAMANHO_TABULEIRO):
+			for j in range(0, TAMANHO_TABULEIRO):
+				tabuleiro[i][j] = " "
+		desenharTabuleiro(tabuleiro, TAMANHO_TABULEIRO)                			# Desenhar o tabuleiro inicial
 	return
 
-def desenharTabuleiro(tabuleiro):
+def desenharTabuleiro(tabuleiro, tamanho):
 	tabuleiroDesenho = "\n "
 	# Vai percorrer todos os número de quadrados existentes no tabuleiro
-	for numeroQuadrado in range(0, 16):
+	for numeroQuadrado in range(0, tamanho*tamanho):
 		# Verifica se não é o último quadrado da linha
-		if (numeroQuadrado + 1) % 4 != 0:
+		if (numeroQuadrado + 1) % tamanho != 0:
 			# Vai formando uma linha do tabuleiro
-			tabuleiroDesenho = tabuleiroDesenho + tabuleiro[numeroQuadrado] + ' | '
+			tabuleiroDesenho = tabuleiroDesenho + tabuleiro[numeroQuadrado/tamanho][numeroQuadrado%tamanho] + ' | '
 		# É o último quadrado da linha
 		else:
 			# Acrescenta o último quadrado à linha e imprime-o
-			tabuleiroDesenho = tabuleiroDesenho + tabuleiro[numeroQuadrado]
+			tabuleiroDesenho = tabuleiroDesenho + tabuleiro[numeroQuadrado/tamanho][numeroQuadrado%tamanho]
 			print(" " + tabuleiroDesenho)
 			# Se não for o último quadrado da última linha imprime um separador de linhas
-			if numeroQuadrado != 15:
-				print('---|---|---|---')
+			if numeroQuadrado != tamanho*tamanho-1:
+				tracos = ''
+				for i in range(0, tamanho-1):
+					tracos = tracos + '---|'
+				print(tracos + '---')
 				# Prepara uma nova linha
 				tabuleiroDesenho = ""
 	return
@@ -185,7 +191,7 @@ def jogar(tabuleiro, peca, posicaoTabuleiro):
 	# Verificar se posição está vazia
 	if tabuleiro[posicaoTabuleiro - 1] == " ":
 		tabuleiro[posicaoTabuleiro - 1] = peca
-		desenharTabuleiro(tabuleiro)
+		desenharTabuleiro(tabuleiro, TAMANHO_TABULEIRO)
 		myTurn = False													# Passa a vez ao adversário
 	# A posição está ocupada
 	else:
@@ -265,7 +271,10 @@ registado = False												# Variável que indica se está registado ou não
 myTurn = False 												# Flag que indica a vez de jogar
 aJogar = False													# Variável que indica se se está a jogar ou não
 rival = ""														# Jogador adversário
-tabuleiro = [' '] * TAMANHO_TABULEIRO       			# Tabuleiro
+tabuleiro = [[0 for x in range(TAMANHO_TABULEIRO)] for y in range(TAMANHO_TABULEIRO)] 
+for i in range(0, TAMANHO_TABULEIRO):
+	for j in range(0, TAMANHO_TABULEIRO):
+		tabuleiro[i][j] = " "
 
 while True:
 	
