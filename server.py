@@ -169,7 +169,10 @@ while True:
 
     if comandos[0] != "OK":
         print("Comando inserido: " + comandos[0])
-
+    
+    if mensagem == "\n":
+        mensagemErro = "Tem que introduzir qualquer coisa no teclado."
+        error(mensagemErro)
     if comandos[0] == "Registar":
         nomeJogador = comandos[1]
         registarCliente(nomeJogador, endereco)
