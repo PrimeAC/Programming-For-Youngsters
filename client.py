@@ -129,6 +129,7 @@ while True:
             length = len(arg)
 
             if arg[0] == "EXIT":
+                sock.sendto("EXIT".encode(),(SERVER_IP,SERVER_PORT))
                 sys.exit()
 
             if arg[0] == "REG":

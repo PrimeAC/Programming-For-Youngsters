@@ -17,6 +17,7 @@ server.bind(('',5005))
 addrs   = {} # dict: nome -> endereco. Ex: addrs["user"]=('127.0.0.1',17234)
 clients = {} # dict: endereco -> nome. Ex: clients[('127.0.0.1',17234)]="user"
 status = {} # dict: nome -> estado. Ex: status["user"]=("occupied" or "available")
+victories = {} # dict: nome -> vitorias. Ex: victories["user"]=2
 
 flag=0
 #FUNCOES DE CADA OPERACAO
@@ -38,6 +39,7 @@ def register_client(name,addr):
         addrs[name] = addr
         clients[addr] = name
         status[name] = "available"
+        victories[name] = 0
         acknowledge(addr)
 
     else:
@@ -48,8 +50,8 @@ def remove_client(addr):
         temp_name=clients[addr]
         del addrs[temp_name]
         del status[temp_name]
+        del victories[temp_name]
         del clients[addr]
-        acknowledge(addr)
 
     else:
         error("User not registered", addr)
@@ -66,7 +68,8 @@ def return_list(addr):
         for key in status:
             print("key {}".format(key))
             print("status {}".format(status[key]))
-            respond_msg = respond_msg + key + ":" + status[key] + ";"
+            print("victories {}".format(victories[key]))
+            respond_msg = respond_msg + key + ":" + status[key] + ":" + str(victories[key]) + "victories;"
 
         server.sendto(respond_msg.encode(),addr)
 
@@ -114,6 +117,10 @@ def play(src, dest, pos ):
 def endGame(src,dest, pos, msg):
     status[src] = "available"
     status[dest] = "available"
+    if msg == "V":
+        for key in victories:
+            if key == src:
+                victories[key] += 1
     msg = "END "+src+ " " + dest +" "+ pos+" "+msg
     server.sendto(msg.encode(),addrs[dest])
 
