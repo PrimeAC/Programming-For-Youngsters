@@ -4,285 +4,411 @@ import socket
 import sys
 import select
 
-SERVER_PORT = 5005
-SERVER_IP   = '127.0.0.1'
 
-sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+##########################################################################################################
+# INICIALIZACAO
 
-# o select quer ficar a espera de ler o socket e ler do stdin (consola)
-inputs = [sock, sys.stdin]
+PORTO_SERVIDOR = 5005
+IP_SERVIDOR = '127.0.0.1'
+TAMANHO_TABULEIRO = 16
+PECA_X = "X"
+PECA_O = "O"
 
-#FUNCOES DE CADA OPERACAO
-def acknowledge(dest):
-    respond_msg = "OK " + dest + "\n"
-    sock.sendto(respond_msg.encode(), (SERVER_IP, SERVER_PORT))
-
-def replyInvitation(sender, to, reply):
-    if reply == "Y\n":
-       msg = "INVR " + sender + " " + to + " accept"
-       sock.sendto(msg.encode(), (SERVER_IP,SERVER_PORT))
-    else:
-        msg = "INVR " + sender + " " + to + " reject"
-        sock.sendto(msg.encode(), (SERVER_IP,SERVER_PORT))
-
-def readList(msg):
-    i=0
-    aux=""
-    print("Message received from server:")
-    print("LSTR:")
-    while i < len(msg):
-       aux=aux+msg[i]
-       if msg[i] == ";":
-          print(aux)
-          aux=""
-       i+=1
-
-#TIC TAC TOE
-def drawBoard(board):
-    # This function prints out the board that it was passed.
-
-     # "board" is a list of 10 strings representing the board (ignore index 0)    print('   |   |')
-     print(' ' + board[1] + ' | ' + board[2] + ' | ' + board[3])
-     #print('   |   |')
-     print('---+---+---')
-     #print('   |   |')
-     print(' ' + board[4] + ' | ' + board[5] + ' | ' + board[6])
-     #print('   |   |')
-     print('---+---+---')
-     #print('   |   |')
-     print(' ' + board[7] + ' | ' + board[8] + ' | ' + board[9])
-     #print('   |   |')
-
-def makeMove(board, letter, move):
-    # Make sure that "move" is a number
-    try:
-        move_number = int(move)
-    except ValueError:
-        print('"{}" is an invalid input.'
-                    ' Your input should be a number from 1 to 9'.format(move))
-        return False
-
-    # Make sure that the number is within range
-    if 1 <= move_number <= 9:
-        if board[int(move)] == " ":
-             board[int(move)] = letter
-             return True
-        else:
-            print('Postion {} is already occupied,'
-                                'please try another one'.format(move_number))
-            return False
-    else:
-            print('"{}" is an invalid input number. The provided number should'
-            ' be from 1 to 9'.format(move_number))
-            return False
-
-def isWinner(bo, le):
-     # Given a board and a player's letter, this function returns True if that player has won.
-     # We use bo instead of board and le instead of letter so we don’t have to type as much.
-     return ((bo[7] == le and bo[8] == le and bo[9] == le) or # across the top
-     (bo[4] == le and bo[5] == le and bo[6] == le) or # across the middle
-     (bo[1] == le and bo[2] == le and bo[3] == le) or # across the bottom
-     (bo[7] == le and bo[4] == le and bo[1] == le) or # down the left side
-     (bo[8] == le and bo[5] == le and bo[2] == le) or # down the middle
-     (bo[9] == le and bo[6] == le and bo[3] == le) or # down the right side
-     (bo[7] == le and bo[5] == le and bo[3] == le) or # diagonal
-     (bo[9] == le and bo[5] == le and bo[1] == le)) # diagonal
-
-def getBoardCopy(board):
-     # Make a duplicate of the board list and return it the duplicate.
-     dupeBoard = []
-
-     for i in board:
-          dupeBoard.append(i)
-
-     return dupeBoard
-
-def isSpaceFree(board, move):
-     # Return true if the passed move is free on the passed board.
-     return board[move] == ' '
-
-def isBoardFull(board):
-     # Return True if every space on the board has been taken. Otherwise return False.
-     for i in range(1, 10):
-         if isSpaceFree(board, i):
-                return False
-     return True
+cliente = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+inputs = [cliente, sys.stdin]
 
 
+##########################################################################################################
+# FUNCOES DE CADA OPERACAO
 
-#CORPO PRINCIPAL
-flag = 0
+def acknowledge(endereco):
+	mensagemResposta = "OK " + endereco + "\n"
+	cliente.sendto(mensagemResposta.encode(), (IP_SERVIDOR, PORTO_SERVIDOR))
+	return
+
+def error(mensagemErro):
+	print("Mensagem de erro: " + mensagemErro)
+	return
+
+def mensagemInformativa(mensagem):
+	i = 1
+	mensagemInformativa = ""
+	# Vai retornar uma mensagem àquela recebida como argumento mas sem a primeira palavra
+	while i < len(mensagem):
+		mensagemInformativa = mensagemInformativa + mensagem[i] + " "
+		i += 1
+	return mensagemInformativa
+
+
+# FUNÇÕES PARA O STANDARD INPUT
+
+def registarClienteSTDIN(comprimentoMensagem):
+	# Erro caso o comprimento da mensagem seja diferente de 2
+	if comprimentoMensagem != 2:
+		mensagemErro = "Argumentos invalidos. Registe-se outra vez."
+		error(mensagemErro)
+		return False
+	return True
+
+def convidarJogadorSTDIN(comprimentoMensagem, comandos):
+	# Erro caso o comprimento da mensagem seja diferente de 2
+	if comprimentoMensagem != 2:
+		mensagemErro = "Argumentos invalidos. Convide novamente o jogador."
+		error(mensagemErro)
+		return False
+	return True
+
+def listarJogadoresSTDIN(comprimentoMensagem):
+	# Erro caso o comprimento da mensagem seja diferente de 1
+	if comprimentoMensagem != 1:
+		mensagemErro = "Argumentos invalidos." 
+		error(mensagemErro)
+		return False
+	return True
+
+def jogadaValidaSTDIN(comprimentoMensagem, comandos):
+	# Erro caso o comprimento da mensagem seja diferente de 2
+	if comprimentoMensagem != 2:
+		mensagemErro = "Argumentos invalidos. Insira novamente o quadrado em que quer jogar." 
+		error(mensagemErro)
+		return False
+	posicaoTabuleiro = comandos[1]
+	# Erro caso o segundo argumento introduzido não seja um número
+	try:
+		posicaoTabuleiro = int(posicaoTabuleiro)
+	except ValueError:
+		print("Tem que introduzir um número inteiro, dentro do limite do tabuleiro.")
+		return False
+	# Erro caso o número do quadrado introduzido não esteja dentro dos limites do tabuleiro
+	if posicaoTabuleiro <= 0 or posicaoTabuleiro > TAMANHO_TABULEIRO:
+		mensagemErro = "O quadrado em que jogou esta fora dos limites do tabuleiro."
+		error(mensagemErro)
+		return False
+	# Erro caso o não seja a vez do jogador efectuar a jogada
+	elif myTurn == False:
+		mensagemErro = "Espere pela sua vez para jogar"
+		error(mensagemErro)
+		return False
+	return True
+
+
+# FUNÇÕES PARA O SOCKET
+
+def listarJogadoresSOCKET(mensagem):
+	i = 1
+	listarJogadores = ""
+	print("Lista Jogadores:")
+	while i < len(mensagem):
+		# Se "i" for número par, mostra o nome do jogador
+		if i % 2 != 0:
+			listarJogadores = listarJogadores + "Nome: " + mensagem[i] + " | "
+		# Caso contrário, mostra o estado para o mesmo jogador
+		else:
+			listarJogadores = listarJogadores + "Estado: " + mensagem[i] + "\n"
+		i = i + 1
+	print(listarJogadores)
+	return
+
+def conviteJogadorSOCKET(jogadorConvida, jogadorConvidado):
+	print("Recebeu um convite de " + jogadorConvida + ". Para aceitar o jogo digite [S], para recusar [N].")
+	# Resposta introduzida pelo jogador convidado
+	respostaConvite = sys.stdin.readline().replace("\n", "")
+	# Se a reposta for válida, "S" ou "N", uma mensagem vai ser enviada ao servidor
+	if respostaConvite == "S":
+		rival = jogadorConvida 										# Jogador rival é quem fez o convite
+		meuSimbolo, rivalSimbolo = [PECA_X, PECA_O]        # Meu símbolo - "X"   |   Símbolo rival - "O"
+		aJogar = True                                      # Flag que indica se está a ser jogado um jogo ou não
+		print("\nVez do seu adversario jogar.")
+		tabuleiro = desenharTabuleiro(tabuleiro)            # Desenhar o tabuleiro inicial
+		mensagem = "RespostaConvite " + jogadorConvidado + " " + jogadorConvida + " aceitou"
+	# Se a resposta do jogador convidado for "N"
+	elif respostaConvite == "N":
+		mensagem = "RespostaConvite " + jogadorConvidado + " " + jogadorConvida + " recusou"
+	else:
+		mensagemErro = "Introduziu incorrectamente a resposta."
+		error(mensagemErro)
+		conviteJogadorSOCKET(jogadorConvida, jogadorConvidado)
+		return
+	cliente.sendto(mensagem.encode(), (IP_SERVIDOR, PORTO_SERVIDOR))
+	return tabuleiro
+
+def respostaConviteSOCKET(jogadorConvidado, respostaConvite):
+	print("O jogador " + jogadorConvidado + " " + respostaConvite + " o seu convite.")
+	# Se a resposta do jogador convidado for "S", ou o convite foi aceite
+	if respostaConvite == "aceitou":
+		rival = jogadorConvidado 									# Jogador rival é quem fez o convite
+		tabuleiro = [' '] * TAMANHO_TABULEIRO       			# Tabuleiro
+		rivalSimbolo, meuSimbolo = [PECA_X, PECA_O]        # Meu símbolo - "O"   |   Símbolo rival - "X"
+		aJogar = True                                      # Flag que indica se está a ser jogado um jogo ou não
+		print("\nSua vez de jogar.")
+		desenharTabuleiro(tabuleiro)                			# Desenhar o tabuleiro inicial
+		return True 													# Sua vez de jogar
+	return False														
+
+def desenharTabuleiro(tabuleiro):
+	tabuleiroDesenho = "\n "
+	# Vai percorrer todos os número de quadrados existentes no tabuleiro
+	for numeroQuadrado in range(0, 16):
+		# Verifica se não é o último quadrado da linha
+		if (numeroQuadrado + 1) % 4 != 0:
+			# Vai formando uma linha do tabuleiro
+			tabuleiroDesenho = tabuleiroDesenho + tabuleiro[numeroQuadrado] + ' | '
+		# É o último quadrado da linha
+		else:
+			# Acrescenta o último quadrado à linha e imprime-o
+			tabuleiroDesenho = tabuleiroDesenho + tabuleiro[numeroQuadrado]
+			print(" " + tabuleiroDesenho)
+			# Se não for o último quadrado da última linha imprime um separador de linhas
+			if numeroQuadrado != 15:
+				print('---|---|---|---')
+				# Prepara uma nova linha
+				tabuleiroDesenho = ""
+	print("\n")
+	return tabuleiroDesenho
+
+def jogar(tabuleiro, peca, posicaoTabuleiro):
+	if tabuleiro[posicaoTabuleiro] == " ":
+		tabuleiro[posicaoTabuleiro] = peca
+		myTurn = False
+	else:
+		mensagemErro = "O local onde jogou ja contem uma peca. Jogue noutro sitio"
+		error(mensagemErro)
+	print(tabuleiro)
+	return
+
+
+
+
+
+
+
+
+
+
+#def makeMove(board, letter, move):
+
+		#  if 1 <= move_number <= 9:
+		#      if board[int(move)] == " ":
+		#           board[int(move)] = letter
+			#          return True
+			#     else:
+			#         print('Postion {} is already occupied,'
+				#                            'please try another one'.format(move_number))
+			#         return False
+			# else:
+		#          print('"{}" is an invalid input number. The provided number should'
+				#        ' be from 1 to 9'.format(move_number))
+			#         return False
+
+#def isWinner(bo, le):
+					# Given a board and a player's letter, this function returns True if that player has won.
+					# We use bo instead of board and le instead of letter so we don’t have to type as much.
+		#   return ((bo[7] == le and bo[8] == le and bo[9] == le) or # across the top
+		#   (bo[4] == le and bo[5] == le and bo[6] == le) or # across the middle
+		#   (bo[1] == le and bo[2] == le and bo[3] == le) or # across the bottom
+		#   (bo[7] == le and bo[4] == le and bo[1] == le) or # down the left side
+		#   (bo[8] == le and bo[5] == le and bo[2] == le) or # down the middle
+		#   (bo[9] == le and bo[6] == le and bo[3] == le) or # down the right side
+		#   (bo[7] == le and bo[5] == le and bo[3] == le) or # diagonal
+		#   (bo[9] == le and bo[5] == le and bo[1] == le)) # diagonal
+
+#def getBoardCopy(board):
+					# Make a duplicate of the board list and return it the duplicate.
+	#    dupeBoard = []
+
+	#    for i in board:
+	#         dupeBoard.append(i)
+
+	#    return dupeBoard
+
+#def isSpaceFree(board, move):
+					# Return true if the passed move is free on the passed board.
+		#   return board[move] == ' '
+
+#def isBoardFull(board):
+					# Return True if every space on the board has been taken. Otherwise return False.
+				# for i in range(1, 10):
+				#     if isSpaceFree(board, i):
+				#            return False
+				# return True
+
+
+
+
+
+
+
+
+
+
+# CORPO PRINCIPAL
+myTurn = False													# Meu turno
+tabuleiro = [' '] * TAMANHO_TABULEIRO       			# Tabuleiro
+
 while True:
-    if flag == 1:
-        drawBoard(theBoard)
-        flag=0
 
-    print("Input message to server below:")
-    ins, outs, exs = select.select(inputs,[],[])
-    #select devolve para a lista ins quem esta a espera de ler
-    for i in ins:
-        # i == sys.stdin - alguem escreveu na consola, vamos ler e enviar
-        if i == sys.stdin:
-            # sys.stdin.readline() le da consola
-            msg = sys.stdin.readline()
-            arg = msg.split()
-            length = len(arg)
+	ins, outs, exs = select.select(inputs,[],[])
+				
+	for mode in ins:
 
-            if arg[0] == "EXIT":
-                sys.exit()
+		# Lê da consola o que a pessoa introduziu no teclado
+		if mode == sys.stdin:
+			mensagem = sys.stdin.readline()
+			comandos = mensagem.split()
+			comprimentoMensagem = len(comandos)
 
-            if arg[0] == "REG":
-                if length != 2:
-                    print("Invalid arguments. Try again with two arguments")
-                    break
-                name = arg[1]
-                print("entrei no reg e associei o nome")
+			if comandos[0] == "Registar":
+				success = registarClienteSTDIN(comprimentoMensagem)
+				if success == False:
+					break
+			elif comandos[0] == "Listar":
+				success = listarJogadoresSTDIN(comprimentoMensagem)
+				if success == False:
+					break
+			elif comandos[0] == "Convidar":
+				success = convidarJogadorSTDIN(comprimentoMensagem, comandos)
+				if success == False:
+					break
+			elif comandos[0] == "Jogar":
+				success = jogadaValidaSTDIN(comprimentoMensagem, comandos)
+				if success == False:
+					break
+				else:
+					posicaoTabuleiro = int(comandos[1])
+					jogar(tabuleiro, PECA_X, posicaoTabuleiro)
 
-            if arg[0] == "INV":
-                if length != 2:
-                    print("Invalid arguments. Try again with INV destination")
-                    break
-                msg = arg[0] + " "+ name+" "+arg[1]
-                print(msg)
+			cliente.sendto(mensagem.encode(), (IP_SERVIDOR, PORTO_SERVIDOR))
 
-            if arg[0] == "MOV":
-                if length != 2:
-                    print("Invalid arguments. Try again with two arguments")
-                    break
-                #msg = msg.split()
-                move = arg[1]
-                if gameIsPlaying:
-                    if turn == 'yourTurn':
+		# Lê da socket, mensagem que vem do servidor
+		elif mode == cliente:
+			(mensagem, endereco) = cliente.recvfrom(1024)
+			mensagem = mensagem.decode()
+			comandos = mensagem.split()
 
-                        if makeMove(theBoard, player1Letter, move):
-                            flag=1
-                            msg = arg[0]+" "+name+" "+oponent+" "+arg[1]
-                            if isWinner(theBoard, player1Letter):
-                                #ALTERAR
-                                drawBoard(theBoard)
-                                print('Hooray! You have won the game!')
-                                gameIsPlaying = False
-                                flag = 0
-                                msg = "END"+" "+name+" "+oponent+" "+arg[1]+" V"
-
-                            else:
-
-                                if isBoardFull(theBoard):
-                                    drawBoard(theBoard)
-                                    print('The game is a tie!')
-                                    msg = "END" + " " + name + " " + oponent + " " + arg[1] + " D"
-                                    flag = 0
-
-
-                                else:
-                                    turn = 'notYourTurn'
-
-                        else:
-                            break
-
-                    else:
-                        print("Not your turn")
-                        break
-
-            # envia mensagem da consola para o servidor
-            sock.sendto(msg.encode(),(SERVER_IP,SERVER_PORT))
-            # i == sock - o servidor enviou uma mensagem para o socket
-        elif i == sock:
-            (msg,addr) = sock.recvfrom(1024)
-            msg = msg.decode()
-            sub = msg
-            cmds = msg.split()
-            if cmds[0] == "MOV":
-                acknowledge(cmds[1])
-                move=cmds[3]
-
-                if gameIsPlaying:
-                    if turn == "notYourTurn":
-                        makeMove(theBoard, player2Letter, move)
-                        flag = 1
-
-                        if isWinner(theBoard, player2Letter):
-                            #ALTERAR
-                            drawBoard(theBoard)
-                            print('Uhhh!!!! What a shame. Better luck next time ;^)')
-                            gameIsPlaying = False
-                            flag=0
-                            break
-                        else:
-                            if isBoardFull(theBoard):
-                                drawBoard(theBoard)
-                                print('The game is a tie!')
-                                flag=0
-                                break
-                            else:
-                                turn = 'yourTurn'
-                                break
-
-                    else:
-                        print("Not your turn")
-                        break
-
-            if cmds[0] == "LSTR:":
-                acknowledge("server")
-                readList(cmds[1])
-                break
-
-            if cmds[0] == "INV":
-                acknowledge(cmds[1])
-                print("Received invite from " + cmds[1])
-                print("Type [Y] to accept or [N] to deny:")
-                msg = sys.stdin.readline()
-
-                if msg == "Y\n":
-                    turn='notYourTurn'
-                    theBoard = [' '] * 10
-                    player1Letter, player2Letter = ['O', 'X']
-                    gameIsPlaying = True
-                    flag = 1
-                    oponent = cmds[1]
-
-                replyInvitation(cmds[2],cmds[1], msg)
-                break
-
-            if cmds[0] == "INVR":
-                print("Player " + cmds[1] + " has " + cmds[2] + " your invitation")
-                acknowledge(cmds[1])
-                if cmds[2] == "accepted":
-                    oponent = cmds[1]
-                    theBoard = [' '] * 10
-                    player1Letter, player2Letter = ['X', 'O']
-                    turn="yourTurn"
-                    gameIsPlaying = True
-                    flag = 1
-                break
-
-            if cmds[0] == "END":
-                acknowledge(cmds[1])
-                move=cmds[3]
-
-                makeMove(theBoard, player2Letter, move)
-
-                if cmds[4] == "V":
-                    drawBoard(theBoard)
-                    print('Uhhh!!!! What a shame. Better luck next time ;^)')
-                    gameIsPlaying = False
-                    flag=0
-                    break
-
-                else:
-                    drawBoard(theBoard)
-                    print('The game is a tie!')
-                    flag=0
-                    break
-
-            if cmds[0] == "NOK:":
-                print(sub)
-                break
+			if comandos[0] == "MensagemInformativa":
+				print(mensagemInformativa(comandos))
+				break
+			elif comandos[0] == "Listar":
+				listarJogadoresSOCKET(comandos)
+				acknowledge("servidor")
+				break
+			elif comandos[0] == "Convidar":
+				jogadorConvida = comandos[1]
+				jogadorConvidado = comandos[2]
+				conviteJogadorSOCKET(jogadorConvida, jogadorConvidado)
+				break
+			elif comandos[0] == "RespostaConvite":
+				jogadorConvidado = comandos[1]
+				respostaConvite = comandos[2]
+				myTurn = respostaConviteSOCKET(jogadorConvidado, respostaConvite)
+				acknowledge(jogadorConvidado)
+				break
+			elif comandos[0] == "Sair":
+				sys.exit()
 
 
-            if cmds[0] == "EXIT":
-                print("Server is down")
-                sys.exit()
+############################################## STDIN ################################################
+
+#            if comandos[0] == "MOV":
+##                if length != 2:
+#                    print("Invalid arguments. Try again with two arguments")
+#                    break
+#                #msg = msg.split()
+#                move = arg[1]
+#                if gameIsPlaying:
+#                    if turn == 'yourTurn':#
+#                    
+	#                                           if makeMove(theBoard, player1Letter, move):
+	#                                               flag=1
+	#                                               msg = arg[0]+" "+name+" "+oponent+" "+arg[1]
+													#                          if isWinner(theBoard, player1Letter):
+	#                                                   #ALTERAR
+	#                                                   drawBoard(theBoard)
+#                                                    print('Hooray! You have won the game!')
+	#                                                   gameIsPlaying = False
+	#                                                   flag = 0
+#                                                    msg = "END"+" "+name+" "+oponent+" "+arg[1]+" V"
+
+	#                                               else:
+
+	#                                                   if isBoardFull(theBoard):
+	#                                                       drawBoard(theBoard)
+		#                                                      print('The game is a tie!')
+#                                                      msg = "END" + " " + name + " " + oponent + " " + arg[1] + " D"
+		#                                                      flag = 0
 
 
-            print('Message received from server: "{}"'.format(cmds[0]))
+		#                                                  else:
+		#                                                      turn = 'notYourTurn'
+
+	#                                           else:
+	#                                               break
+#                    
+	#                                       else:
+	#                                           print("Not your turn")
+	#                                           break
+
+
+############################################## SOCKET ################################################
+
+
+#            if comandos[0] == "MOV":
+#                acknowledge(cmds[1])
+	#               move=cmds[3]
+#
+	#               if gameIsPlaying:
+	#                   if turn == "notYourTurn":
+	#                       makeMove(theBoard, player2Letter, move)
+	#                       flag = 1
+#
+	#                       if isWinner(theBoard, player2Letter):
+																												#ALTERAR
+		#                          drawBoard(theBoard)
+		#                          print('Uhhh!!!! What a shame. Better luck next time ;^)')
+		#                          gameIsPlaying = False
+		#                          flag=0
+		#                          break
+		#                     else:
+			#                         if isBoardFull(theBoard):
+			#                             drawBoard(theBoard)
+				#                            print('The game is a tie!')
+				#                            flag=0
+				#                            break
+				#                        else:
+			#                             turn = 'yourTurn'
+			#                             break
+
+					#               else:
+					#                   print("Not your turn")
+					#                   break
+
+
+
+
+
+				##        if comandos[0] == "END":
+				#            acknowledge(cmds[1])
+				#            move=cmds[3]
+
+				#            makeMove(theBoard, player2Letter, move)
+
+				#            if cmds[4] == "V":
+					#               drawBoard(theBoard)
+				#                print('Uhhh!!!! What a shame. Better luck next time ;^)')
+				##                gameIsPlaying = False
+				#                flag=0
+				#                break
+
+					#           else:
+					#               drawBoard(theBoard)
+						#              print('The game is a tie!')
+					#               flag=0
+					#               break
+
+
+
+
+
+
+
+					#       print('Message received from server: "{}"'.format(comandos[0]))

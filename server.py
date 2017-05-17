@@ -1,151 +1,196 @@
+# -*- coding: utf-8 -*-
+
 import socket
 
-# Recebe no porto SERVER PORT os comandos "IAM <nome>", "HELLO",
-#    "HELLOTO <nome>" ou "KILLSERVER"
-# "IAM <nome>" - regista um cliente como <nome>
-# "HELLO" - responde HELLO ou HELLO <nome> se o cliente estiver registado
-# "HELLOTO <nome>" - envia HELLO para o cliente <nome>
-# "KILLSERVER" - mata o servidor
 
-#INICIALIZACAO
+##########################################################################################################
+# INICIALIZAÇÃO
 
-SERVER_PORT=5005
+PORTO_SERVIDOR = 5005
 
-server = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-server.bind(('',5005))
+servidor = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+servidor.bind(('', 5005))
 
-addrs   = {} # dict: nome -> endereco. Ex: addrs["user"]=('127.0.0.1',17234)
-clients = {} # dict: endereco -> nome. Ex: clients[('127.0.0.1',17234)]="user"
-status = {} # dict: nome -> estado. Ex: status["user"]=("occupied" or "available")
+enderecos = {}  # dicionário: nome -> endereço  | Exemplo: endereços["utilizador"] = ('127.0.0.1', 17234)
+clientes = {}   # dicionário: endereço -> nome  | Exemplo: clientes[('127.0.0.1', 17234)] = "João"
+estado = {}     # dicionário: nome -> estado    | Exemplo: estado["utilizador"] = ("ocupado" ou "livre")
 
-flag=0
-#FUNCOES DE CADA OPERACAO
-def acknowledge(addr):
-    if addr == "server":
-        print("OK\n")
+
+##########################################################################################################
+# FUNÇÕES DE CADA OPERAÇÃO
+
+def acknowledge(endereco):
+    if endereco == "servidor":
+        print("Servidor OK")
     else:
-        respond_msg = "OK" + "\n"
-        server.sendto(respond_msg.encode(), addrs[cmds[1]])
+        mensagemResposta = "OK" + "\n"
+        enderecoJogador = enderecos[comandos[1]]
+        servidor.sendto(mensagemResposta.encode(), enderecoJogador)
+    return
 
-def error(message,addr):
-    print("msg:"+message)
-    respond_msg = "NOK: " + message
-    server.sendto(respond_msg.encode(), addr)
+def error(mensagemErro, enderecoJogador):
+    mensagemResposta = "Mensagem de erro: " + mensagemErro
+    print(mensagemResposta)
+    mensagemResposta = "MensagemInformativa " + mensagemResposta
+    servidor.sendto(mensagemResposta.encode(), enderecoJogador)
+    return
 
-def register_client(name,addr):
-    # se o nome nao existe e o endereco nao esta a ser usado
-    if not name in addrs and not addr in clients and not name in status:
-        addrs[name] = addr
-        clients[addr] = name
-        status[name] = "available"
-        acknowledge(addr)
-
+def registarCliente(nome, endereco):
+    # Verificar se o nome já está a ser usado
+    if nome in enderecos:
+        mensagemErro = "Nome de utilizador " + nome + " ja esta a ser usado."
+        error(mensagemErro, endereco)
+    # Verificar se o endereço já está a ser usado
+    elif endereco in clientes:
+        mensagemErro = "Endereco " + str(endereco) + " ja esta a ser usado."
+        error(mensagemErro, endereco)
+    # Adicionar um novo jogador
     else:
-        error("Username already in use", addr)
+        enderecos[nome] = endereco
+        clientes[endereco] = nome
+        estado[nome] = "Livre"
+        mensagemResposta = "Registado com o nome {}".format(nome)
+        print(mensagemResposta)
+        mensagemResposta = "MensagemInformativa " + mensagemResposta
+        servidor.sendto(mensagemResposta.encode(), endereco)
+        acknowledge(endereco)
+    return
 
-def remove_client(addr):
-    if (addr in clients): #se addr estiver no dicinario clients, o utilizador existe
-        temp_name=clients[addr]
-        del addrs[temp_name]
-        del status[temp_name]
-        del clients[addr]
-        acknowledge(addr)
+def removerCliente(endereco):
+    # Verificar se o endereço (utilizador) existe
+    if endereco in clientes:
+        nome = clientes[endereco]
+        del enderecos[nome]
+        del clientes[endereco]
+        del estado[nome]
+    servidor.sendto(comandos[0].encode(), endereco)
+    return
 
+def listarJogadores(endereco):
+    # Verificar se o endereço (utilizador) existe
+    if endereco in clientes:
+        mensagemResposta = "Listar "
+        for nome in estado:
+            mensagemResposta = mensagemResposta + nome + " " + estado[nome] + " "
+        servidor.sendto(mensagemResposta.encode(), endereco)
     else:
-        error("User not registered", addr)
+        mensagemErro = "Nao tem acesso!"
+        error(mensagemErro, endereco)
+    return
 
-def end_clients():
-    for addr in clients:
-        respond_msg = "EXIT"
-        server.sendto(respond_msg.encode(), addr)
-
-def return_list(addr):
-    if addr in clients:
-        respond_msg = "LSTR: "
-
-        for key in status:
-            print("key {}".format(key))
-            print("status {}".format(status[key]))
-            respond_msg = respond_msg + key + ":" + status[key] + ";"
-
-        server.sendto(respond_msg.encode(),addr)
-
-    else:
-        error("Access Denied!", addr)
-
-def invite(addr, dest):
-    if dest in addrs and dest != clients[addr]:
-        if status[clients[addr]] != "occupied":
-            if status[dest]=="available":
-                status[clients[addr]]="occupied"
-                daddr = addrs[dest]
-                respond_msg="INV " + clients[addr] + " "+ dest
-                print(respond_msg)
-                server.sendto(respond_msg.encode(),daddr)
-
+def convidarJogador(endereco, jogadorConvidado):
+    jogadorConvida = clientes[endereco]
+    # Verificar se o destinatário está na lista de endereços
+    if jogadorConvidado in enderecos:
+        # Verificar se o destinatário não é o próprio que convida
+        if jogadorConvidado != jogadorConvida:
+            # Verificar se o estado do jogador que fez o convite é diferente de "ocupado"
+            if estado[jogadorConvida] != "Ocupado":
+                # Verificar se o estado do jogador convidado é "livre"
+                if estado[jogadorConvidado] == "Livre":
+                    estado[jogadorConvida] = "Ocupado"
+                    enderecoConvidado = enderecos[jogadorConvidado]
+                    mensagemConvite = "Convidar " + jogadorConvida + " " + jogadorConvidado
+                    servidor.sendto(mensagemConvite.encode(), enderecoConvidado)
+                    mensagem = "MensagemInformativa Convite enviado para " + jogadorConvidado
+                    servidor.sendto(mensagem.encode(), endereco)
+                    return
+                else:
+                    mensagemErro = "Utilizador convidado esta ocupado."
             else:
-                error("User not available", addr)
-
+                mensagemErro = "Esta ocupado, nao pode convidar ninguem."
         else:
-            error("Can't send more invites", addr)
-
+            mensagemErro = "Nao se pode convidar a si proprio."
     else:
-        error("User does not exist", addr)
+        mensagemErro = "Utilizador convidado nao existe"
+    error(mensagemErro, endereco)
+    return
 
-def invite_response(addr, dest, reply):
-    if reply=="accept":
-        flag = 1
-        status[clients[addr]]="occupied"
-        respond_msg="INVR " + clients[addr] + " accepted"
-        server.sendto(respond_msg.encode(), addrs[dest])
+def respostaConvite(jogadorConvidado, jogadorConvida, resposta):
+    enderecoConvida = enderecos[jogadorConvida]
+    if resposta == "aceitou":
+        estado[jogadorConvidado] = "Ocupado"
     else:
-        status[dest]="available"
-        respond_msg="INVR " + clients[addr] + " rejected"
-        server.sendto(respond_msg.encode(), addrs[dest])
-
-def respond_error(addr):
-    respond_msg = "INVALID MESSAGE\n"
-    server.sendto(respond_msg.encode(),addr)
-
-def play(src, dest, pos ):
-    msg = "MOV "+ src + " " + dest + " "+ pos
-    server.sendto(msg.encode(),addrs[dest])
-
-def endGame(src,dest, pos, msg):
-    status[src] = "available"
-    status[dest] = "available"
-    msg = "END "+src+ " " + dest +" "+ pos+" "+msg
-    server.sendto(msg.encode(),addrs[dest])
+        estado[jogadorConvida] = "Livre"
+    mensagemResposta = "RespostaConvite " + jogadorConvidado + " " + resposta
+    servidor.sendto(mensagemResposta.encode(), enderecoConvida)
+    return
 
 
 
-#CORPO PRINCIPAL
-print("Starting server on port {}...".format(SERVER_PORT))
+
+
+
+
+
+#def end_clients():
+ #   for addr in clients:
+ #       respond_msg = "EXIT"
+ #       servidor.sendto(respond_msg.encode(), addr)
+
+#def respond_error(addr):
+#    respond_msg = "INVALID MESSAGE\n"
+ #   servidor.sendto(respond_msg.encode(),addr)
+
+#def play(src, dest, pos ):
+ #   msg = "MOV "+ src + " " + dest + " "+ pos
+ #   servidor.sendto(msg.encode(),addrs[dest])
+
+#def endGame(src,dest, pos, msg):
+ #   status[src] = "available"
+ #   status[dest] = "available"
+#    msg = "END "+src+ " " + dest +" "+ pos+" "+msg
+ #   servidor.sendto(msg.encode(),addrs[dest])
+
+
+
+
+
+
+
+
+
+
+# CORPO PRINCIPAL
+
+print("Iniciar o servidor no porto {}...".format(PORTO_SERVIDOR))
+
 while True:
-    (msg,addr) = server.recvfrom(1024)
-    msg = msg.decode()
-    cmds = msg.split()
-    print(cmds[0])
-    if(cmds[0]=="REG"):
-        register_client(cmds[1],addr)
-    elif(cmds[0]=="EXIT"):
-        remove_client(addr)
-    elif(cmds[0]=="LST"):
-        return_list(addr)
-    elif(cmds[0]=="INV"):
-        invite(addr, cmds[2])
-    elif(cmds[0]=="INVR"):
-        invite_response(addr, cmds[2], cmds[3])
-    elif(cmds[0]=="OK"):
-        acknowledge(cmds[1])
-    elif(cmds[0]=="MOV"):
-        play(cmds[1],cmds[2],cmds[3])
-    elif(cmds[0]=="END"):
-        endGame(cmds[1],cmds[2],cmds[3],cmds[4])
-    elif(cmds[0]=="KILLSERVER"):
-        end_clients()
-        break
-    else:
-        respond_error(addr)
+    # Lê o que o servidor enviou
+    (mensagem, endereco) = servidor.recvfrom(1024)
+    mensagem = mensagem.decode()
+    comandos = mensagem.split()
 
-server.close()
+    if comandos[0] != "OK":
+        print("Comando inserido: " + comandos[0])
+
+    if comandos[0] == "Registar":
+        nomeJogador = comandos[1]
+        registarCliente(nomeJogador, endereco)
+    elif comandos[0] == "Sair" :
+        removerCliente(endereco)
+    elif comandos[0] == "Listar":
+        listarJogadores(endereco)
+    elif comandos[0] == "Convidar":
+        nomeJogador = comandos[1]
+        convidarJogador(endereco, nomeJogador)
+    elif comandos[0] == "RespostaConvite":
+        jogadorConvidado = comandos[1]
+        jogadorConvida = comandos[2]
+        resposta = comandos[3]
+        respostaConvite(jogadorConvidado, jogadorConvida, resposta)
+    #elif comandos[0] == "Movimentar":
+
+
+
+ #   elif(comandos[0]=="MOV"):
+ #       play(comandos[1],comandos[2],comandos[3])
+ #   elif(comandos[0]=="END"):
+ #       endGame(comandos[1],comandos[2],comandos[3],comandos[4])
+ #   elif(comandos[0]=="KILLSERVER"):
+ #       end_clients()
+  #      break
+  #  else:
+  #      respond_error(endereco)
+
+servidor.close()
