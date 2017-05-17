@@ -73,13 +73,13 @@ def return_list(addr):
     else:
         error("Access Denied!", addr)
 
-def invite(addr, dest):
+def invite(addr, dest, size):
     if dest in addrs and dest != clients[addr]:
         if status[clients[addr]] != "occupied":
             if status[dest]=="available":
                 status[clients[addr]]="occupied"
                 daddr = addrs[dest]
-                respond_msg="INV " + clients[addr] + " "+ dest
+                respond_msg="INV " + clients[addr] + " "+ dest + " " + size
                 print(respond_msg)
                 server.sendto(respond_msg.encode(),daddr)
 
@@ -92,15 +92,15 @@ def invite(addr, dest):
     else:
         error("User does not exist", addr)
 
-def invite_response(addr, dest, reply):
+def invite_response(addr, dest, reply, size):
     if reply=="accept":
         flag = 1
         status[clients[addr]]="occupied"
-        respond_msg="INVR " + clients[addr] + " accepted"
+        respond_msg="INVR " + clients[addr] + " accepted " + size
         server.sendto(respond_msg.encode(), addrs[dest])
     else:
         status[dest]="available"
-        respond_msg="INVR " + clients[addr] + " rejected"
+        respond_msg="INVR " + clients[addr] + " rejected " + size
         server.sendto(respond_msg.encode(), addrs[dest])
 
 def respond_error(addr):
@@ -133,9 +133,10 @@ while True:
     elif(cmds[0]=="LST"):
         return_list(addr)
     elif(cmds[0]=="INV"):
-        invite(addr, cmds[2])
+        invite(addr, cmds[2], cmds[3])
     elif(cmds[0]=="INVR"):
-        invite_response(addr, cmds[2], cmds[3])
+        print(msg)
+        invite_response(addr, cmds[2], cmds[3], cmds[4])
     elif(cmds[0]=="OK"):
         acknowledge(cmds[1])
     elif(cmds[0]=="MOV"):

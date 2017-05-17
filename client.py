@@ -17,12 +17,12 @@ def acknowledge(dest):
     respond_msg = "OK " + dest + "\n"
     sock.sendto(respond_msg.encode(), (SERVER_IP, SERVER_PORT))
 
-def replyInvitation(sender, to, reply):
+def replyInvitation(sender, to, size, reply):
     if reply == "Y\n":
-       msg = "INVR " + sender + " " + to + " accept"
+       msg = "INVR " + sender + " " + to + " accept " + size
        sock.sendto(msg.encode(), (SERVER_IP,SERVER_PORT))
     else:
-        msg = "INVR " + sender + " " + to + " reject"
+        msg = "INVR " + sender + " " + to + " reject " + size
         sock.sendto(msg.encode(), (SERVER_IP,SERVER_PORT))
 
 def readList(msg):
@@ -38,15 +38,21 @@ def readList(msg):
        i+=1
 
 #TIC TAC TOE
-def drawBoard(board):
+def drawBoard(board, size):
     # This function prints out the board that it was passed.
     output = ''
-    for i in range(1, 17):
-    	if i%4==0:
+    row = ''
+    for i in range(0, size):
+        if(i==size-1):
+            row = row + '---'
+        else:
+            row = row + '---+'
+    for i in range(1, (size*size)+1):
+    	if i%size==0:
     		output = output + board[i]
     		print(' ' + output)
-    		if i != 16:
-    			print('---+---+---+---')
+    		if i != size*size:
+    			print(row)
     		output = ''
     	else:
     		output = output + board[i] + ' | '
@@ -130,7 +136,7 @@ def isBoardFull(board):
 flag = 0
 while True:
     if flag == 1:
-        drawBoard(theBoard)
+        drawBoard(theBoard, size)
         flag=0
 
     print("Input message to server below:")
@@ -155,10 +161,10 @@ while True:
                 print("entrei no reg e associei o nome")
 
             if arg[0] == "INV":
-                if length != 2:
-                    print("Invalid arguments. Try again with INV destination")
+                if length != 3 or arg[2]<=0:
+                    print("Invalid arguments. Try again with INV destination or board size superior to 0")
                     break
-                msg = arg[0] + " "+ name+" "+arg[1]
+                msg = arg[0] + " "+ name+" "+arg[1]+" "+arg[2]
                 print(msg)
 
             if arg[0] == "MOV":
@@ -175,7 +181,7 @@ while True:
                             msg = arg[0]+" "+name+" "+oponent+" "+arg[1]
                             if isWinner(theBoard, player1Letter):
                                 #ALTERAR
-                                drawBoard(theBoard)
+                                drawBoard(theBoard,size)
                                 print('Hooray! You have won the game!')
                                 gameIsPlaying = False
                                 flag = 0
@@ -184,7 +190,7 @@ while True:
                             else:
 
                                 if isBoardFull(theBoard):
-                                    drawBoard(theBoard)
+                                    drawBoard(theBoard,size)
                                     print('The game is a tie!')
                                     msg = "END" + " " + name + " " + oponent + " " + arg[1] + " D"
                                     flag = 0
@@ -219,14 +225,14 @@ while True:
 
                         if isWinner(theBoard, player2Letter):
                             #ALTERAR
-                            drawBoard(theBoard)
+                            drawBoard(theBoard,size)
                             print('Uhhh!!!! What a shame. Better luck next time ;^)')
                             gameIsPlaying = False
                             flag=0
                             break
                         else:
                             if isBoardFull(theBoard):
-                                drawBoard(theBoard)
+                                drawBoard(theBoard,size)
                                 print('The game is a tie!')
                                 flag=0
                                 break
@@ -245,19 +251,20 @@ while True:
 
             if cmds[0] == "INV":
                 acknowledge(cmds[1])
-                print("Received invite from " + cmds[1])
+                print("Received invite from " + cmds[1] + " with board size "+ cmds[3])
                 print("Type [Y] to accept or [N] to deny:")
                 msg = sys.stdin.readline()
 
                 if msg == "Y\n":
                     turn='notYourTurn'
-                    theBoard = [' '] * 17
+                    size = int(cmds[3])
+                    theBoard = [' '] * ((size*size)+1)
                     player1Letter, player2Letter = ['O', 'X']
                     gameIsPlaying = True
                     flag = 1
                     oponent = cmds[1]
 
-                replyInvitation(cmds[2],cmds[1], msg)
+                replyInvitation(cmds[2],cmds[1], cmds[3], msg)
                 break
 
             if cmds[0] == "INVR":
@@ -265,7 +272,8 @@ while True:
                 acknowledge(cmds[1])
                 if cmds[2] == "accepted":
                     oponent = cmds[1]
-                    theBoard = [' '] * 17
+                    size = int(cmds[3])
+                    theBoard = [' '] * ((size*size)+1)
                     player1Letter, player2Letter = ['X', 'O']
                     turn="yourTurn"
                     gameIsPlaying = True
@@ -279,14 +287,14 @@ while True:
                 makeMove(theBoard, player2Letter, move)
 
                 if cmds[4] == "V":
-                    drawBoard(theBoard)
+                    drawBoard(theBoard,size)
                     print('Uhhh!!!! What a shame. Better luck next time ;^)')
                     gameIsPlaying = False
                     flag=0
                     break
 
                 else:
-                    drawBoard(theBoard)
+                    drawBoard(theBoard,size)
                     print('The game is a tie!')
                     flag=0
                     break
