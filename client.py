@@ -210,11 +210,9 @@ def desenharTabuleiro(tabuleiro, tamanho):
 
 def jogar(tabuleiro, peca, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro):
 	global myTurn														# Variável global a ser alterada
-	linhaTabuleiro = linhaTabuleiro - 1
-	colunaTabuleiro = colunaTabuleiro - 1
 	# Verificar se posição está vazia
-	if tabuleiro[linhaTabuleiro][colunaTabuleiro] == " ":
-		tabuleiro[linhaTabuleiro][colunaTabuleiro] = peca
+	if espacoLivre(tabuleiro, linhaTabuleiro, colunaTabuleiro):
+		tabuleiro[int(linhaTabuleiro) - 1][int(colunaTabuleiro) - 1] = peca
 		desenharTabuleiro(tabuleiro, tamanhoTabuleiro)
 		myTurn = False													# Passa a vez ao adversário
 	# A posição está ocupada
@@ -225,46 +223,124 @@ def jogar(tabuleiro, peca, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro):
 			return False
 	return
 
+def vitoria(tabuleiro, peca, linhaTabuleiro, colunaTabuleiro, tamanho_tabuleiro):
+	tamanho_tabuleiro = int(tamanho_tabuleiro)
+	tamanho = tamanho_tabuleiro
+	esquerda = colunaTabuleiro - 1
+	direita = tamanho - colunaTabuleiro
+	cima = linhaTabuleiro - 1
+	baixo = tamanho - linhaTabuleiro
+	linhaTabuleiro = linhaTabuleiro - 1
+	colunaTabuleiro = colunaTabuleiro - 1
+	seguidos = 0
+	if tamanho > 5:
+		tamanho = 5
+	if esquerda < direita:
 
+		#Verificar linha
+		valor = esquerda if esquerda < tamanho else tamanho
+		for i in range(0, valor + 1):
+			if colunaTabuleiro - i + tamanho - 1 < tamanho_tabuleiro: 
+				for j in range(0, tamanho):
+					if tabuleiro[linhaTabuleiro][colunaTabuleiro - i + j] == peca:
+						seguidos += 1
+					if seguidos == tamanho:
+						return True
+				seguidos = 0
 
+		#Verificar diagonal superior esquerda
+		valor = valor if valor < cima else cima
+		for i in range(0, valor + 1):
+			if colunaTabuleiro - i + tamanho - 1 < tamanho_tabuleiro and linhaTabuleiro - i + tamanho - 1 < tamanho_tabuleiro: 
+				for j in range(0, tamanho):
+					if tabuleiro[linhaTabuleiro - i + j][colunaTabuleiro - i + j] == peca:
+						seguidos += 1
+					if seguidos == tamanho:
+						return True
+				seguidos = 0
 
+		#Verificar diagonal inferior esquerda
+		valor = valor if valor < baixo else baixo
+		for i in range(0, valor + 1):
+			if colunaTabuleiro - i + tamanho - 1 < tamanho_tabuleiro and linhaTabuleiro + i - tamanho + 1 >= 0: 
+				for j in range(0, tamanho):
+					if tabuleiro[linhaTabuleiro + i - j][colunaTabuleiro - i + j] == peca:
+						seguidos += 1
+					if seguidos == tamanho:
+						return True
+				seguidos = 0
+	else:
 
+		#Verificar linha
+		valor = direita if direita < tamanho else tamanho
+		for i in range(0, valor + 1):
+			if colunaTabuleiro + i - tamanho + 1 >= 0: 
+				for j in range(0, tamanho):
+					if tabuleiro[linhaTabuleiro][colunaTabuleiro + i - j] == peca:
+						seguidos += 1
+					if seguidos == tamanho:
+						return True
+				seguidos = 0
 
+		#Verificar diagonal superior direita
+		valor = valor if valor < cima else cima
+		for i in range(0, valor + 1):
+			if colunaTabuleiro + i - tamanho + 1 >= 0 and linhaTabuleiro - i + tamanho - 1 < tamanho_tabuleiro: 
+				for j in range(0, tamanho):
+					if tabuleiro[linhaTabuleiro - i + j][colunaTabuleiro + i - j] == peca:
+						seguidos += 1
+					if seguidos == tamanho:
+						return True
+				seguidos = 0
 
+		#Verificar diagonal inferior direita
+		valor = valor if valor < baixo else baixo
+		for i in range(0, valor + 1):
+			if colunaTabuleiro + i - tamanho + 1 >= 0 and linhaTabuleiro + i - tamanho + 1 >= 0: 
+				for j in range(0, tamanho):
+					if tabuleiro[linhaTabuleiro + i - j][colunaTabuleiro + i - j] == peca:
+						seguidos += 1
+					if seguidos == tamanho:
+						return True
+				seguidos = 0
+	if cima < baixo:
 
+		#Verifica coluna
+		valor = cima if cima < tamanho else tamanho
+		for i in range(0, valor + 1):
+			if linhaTabuleiro - i + tamanho - 1 < tamanho_tabuleiro: 
+				for j in range(0, tamanho):
+					if tabuleiro[linhaTabuleiro - i + j][colunaTabuleiro] == peca:
+						seguidos += 1
+					if seguidos == tamanho:
+						return True
+				seguidos = 0
+	else:
+		
+		#Verifica coluna
+		valor = baixo if baixo < tamanho else tamanho
+		for i in range(0, valor + 1):
+			if linhaTabuleiro + i - tamanho + 1 >= 0: 
+				for j in range(0, tamanho):
+					if tabuleiro[linhaTabuleiro + i - j][colunaTabuleiro] == peca:
+						seguidos += 1
+					if seguidos == tamanho:
+						return True
+				seguidos = 0
+	return False
 
+def espacoLivre(tabuleiro, linhaTabuleiro, colunaTabuleiro):
+     # Return true if the passed move is free on the passed board.
+     return tabuleiro[int(linhaTabuleiro) - 1][int(colunaTabuleiro) - 1] == " "
 
-#def isWinner(bo, le):
-					# Given a board and a player's letter, this function returns True if that player has won.
-					# We use bo instead of board and le instead of letter so we don’t have to type as much.
-		#   return ((bo[7] == le and bo[8] == le and bo[9] == le) or # across the top
-		#   (bo[4] == le and bo[5] == le and bo[6] == le) or # across the middle
-		#   (bo[1] == le and bo[2] == le and bo[3] == le) or # across the bottom
-		#   (bo[7] == le and bo[4] == le and bo[1] == le) or # down the left side
-		#   (bo[8] == le and bo[5] == le and bo[2] == le) or # down the middle
-		#   (bo[9] == le and bo[6] == le and bo[3] == le) or # down the right side
-		#   (bo[7] == le and bo[5] == le and bo[3] == le) or # diagonal
-		#   (bo[9] == le and bo[5] == le and bo[1] == le)) # diagonal
-
-
-
-#def isSpaceFree(board, move):
-					# Return true if the passed move is free on the passed board.
-		#   return board[move] == ' '
-
-#def isBoardFull(board):
-					# Return True if every space on the board has been taken. Otherwise return False.
-				# for i in range(1, 10):
-				#     if isSpaceFree(board, i):
-				#            return False
-				# return True
-
-
-
-
-
-
-
+def tabuleiroCheio(tabuleiro, tamanho):
+	tamanho = int(tamanho) + 1
+    # Return True if every space on the board has been taken. Otherwise return False.
+	for i in range(1, tamanho):
+		for j in range(1, tamanho):
+			if espacoLivre(tabuleiro, i, j):
+				return False
+	return True
 
 
 
@@ -299,6 +375,7 @@ while True:
 				break
 			elif comandos[0] == "Registar":
 				success = registarClienteSTDIN(comprimentoMensagem)
+				nome = comandos[1]
 				if success == False:
 					break
 				else:
@@ -321,6 +398,14 @@ while True:
 					success = jogar(tabuleiro, PECA_X, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro)
 					if success == False:
 						break
+					if vitoria(tabuleiro, PECA_X, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro):
+						print('Hooray! Ganhaste este jogo!')
+						mensagem = "Acaba "+nome+" "+rival+" "+comandos[1]+" "+comandos[2]+" V"
+						aJogar = False
+					elif tabuleiroCheio(tabuleiro, tamanhoTabuleiro):
+						print('Este jogou acabou num empate!')
+						mensagem = "Acaba "+nome+" "+rival+" "+comandos[1]+" "+comandos[2]+" D"
+						aJogar = False
 					mensagem = mensagem + rival
 			elif comandos[0] == "Sair":
 				mensagem = "Sair " + rival
@@ -341,6 +426,9 @@ while True:
 				acknowledge("servidor")
 				break
 			elif comandos[0] == "Convidar":
+				print(comandos[1])
+				print(comandos[2])
+				print(comandos[3])
 				jogadorConvida = comandos[1]
 				jogadorConvidado = comandos[2]
 				tamanhoTabuleiro = comandos[3]
@@ -357,6 +445,10 @@ while True:
 				linhaTabuleiro = int(comandos[1])
 				colunaTabuleiro = int(comandos[2])
 				jogar(tabuleiro, PECA_O, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro)
+				if vitoria(tabuleiro, PECA_O, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro):
+					print('Uhhh!!!! Que pena. Melhor sorte para a proxima ;^)')
+				elif tabuleiroCheio(tabuleiro, tamanhoTabuleiro):
+					print('Este jogou acabou num empate!')
 				myTurn = True
 				break
 			elif comandos[0] == "SairRival":
@@ -365,105 +457,17 @@ while True:
 				rival = ""
 				print("Parabens, ganhou este jogo devido a desistencia do seu adversario!")
 				break
+			elif comandos[0] == "Acaba":
+				acknowledge(comandos[1])
+				linhaTabuleiro = int(comandos[3])
+				colunaTabuleiro = int(comandos[4])
+				jogar(tabuleiro, PECA_O, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro)
+				if comandos[5] == 'V':
+					print('Uhhh!!!! Que pena. Melhor sorte para a proxima ;^)')
+					aJogar = False
+				else:
+					print('Este jogou acabou num empate!')
+					aJogar = False
 			elif comandos[0] == "Sair":
 				sys.exit()
 
-
-############################################## STDIN ################################################
-
-
-#                    
-	#                                           if makeMove(theBoard, player1Letter, move):
-	#                                               flag=1
-	#                                               msg = arg[0]+" "+name+" "+oponent+" "+arg[1]
-													#                          if isWinner(theBoard, player1Letter):
-	#                                                   #ALTERAR
-	#                                                   drawBoard(theBoard)
-#                                                    print('Hooray! You have won the game!')
-	#                                                   gameIsPlaying = False
-	#                                                   flag = 0
-#                                                    msg = "END"+" "+name+" "+oponent+" "+arg[1]+" V"
-
-	#                                               else:
-
-	#                                                   if isBoardFull(theBoard):
-	#                                                       drawBoard(theBoard)
-		#                                                      print('The game is a tie!')
-#                                                      msg = "END" + " " + name + " " + oponent + " " + arg[1] + " D"
-		#                                                      flag = 0
-
-
-		#                                                  else:
-		#                                                      turn = 'notYourTurn'
-
-	#                                           else:
-	#                                               break
-#                    
-	#                                       else:
-	#                                           print("Not your turn")
-	#                                           break
-
-
-############################################## SOCKET ################################################
-
-
-#            if comandos[0] == "MOV":
-#                acknowledge(cmds[1])
-	#               move=cmds[3]
-#
-	#               if gameIsPlaying:
-	#                   if turn == "notYourTurn":
-	#                       makeMove(theBoard, player2Letter, move)
-	#                       flag = 1
-#
-	#                       if isWinner(theBoard, player2Letter):
-																											#ALTERAR
-		#                          drawBoard(theBoard)
-		#                          print('Uhhh!!!! What a shame. Better luck next time ;^)')
-		#                          gameIsPlaying = False
-		#                          flag=0
-		#                          break
-		#                     else:
-			#                         if isBoardFull(theBoard):
-			#                             drawBoard(theBoard)
-				#                            print('The game is a tie!')
-				#                            flag=0
-				#                            break
-				#                        else:
-			#                             turn = 'yourTurn'
-			#                             break
-
-					#               else:
-					#                   print("Not your turn")
-					#                   break
-
-
-
-
-
-				##        if comandos[0] == "END":
-				#            acknowledge(cmds[1])
-				#            move=cmds[3]
-
-				#            makeMove(theBoard, player2Letter, move)
-
-				#            if cmds[4] == "V":
-					#               drawBoard(theBoard)
-				#                print('Uhhh!!!! What a shame. Better luck next time ;^)')
-				##                gameIsPlaying = False
-				#                flag=0
-				#                break
-
-					#           else:
-					#               drawBoard(theBoard)
-						#              print('The game is a tie!')
-					#               flag=0
-					#               break
-
-
-
-
-
-
-
-					#       print('Message received from server: "{}"'.format(comandos[0]))

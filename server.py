@@ -134,38 +134,20 @@ def jogar(linhaTabuleiro, colunaTabuleiro, rival):
     servidor.sendto(mensagem.encode(), enderecoRival)
     return
 
+def respond_error(addr):
+    respond_msg = "INVALID MESSAGE\n"
+    servidor.sendto(respond_msg.encode(),addr)
 
-
-
-
-
-
+def acabaJogo(src, dest, linha, coluna, msg):
+    estado[src] = "Livre"
+    estado[dest] = "Livre"
+    msg = "Acaba "+src+" "+dest+" "+linha+" "+coluna+" "+msg
+    servidor.sendto(msg.encode(),enderecos[dest])
 
 #def end_clients():
  #   for addr in clients:
  #       respond_msg = "EXIT"
  #       servidor.sendto(respond_msg.encode(), addr)
-
-#def respond_error(addr):
-#    respond_msg = "INVALID MESSAGE\n"
- #   servidor.sendto(respond_msg.encode(),addr)
-
-#def play(src, dest, pos ):
- #   msg = "MOV "+ src + " " + dest + " "+ pos
- #   servidor.sendto(msg.encode(),addrs[dest])
-
-#def endGame(src,dest, pos, msg):
- #   status[src] = "available"
- #   status[dest] = "available"
-#    msg = "END "+src+ " " + dest +" "+ pos+" "+msg
- #   servidor.sendto(msg.encode(),addrs[dest])
-
-
-
-
-
-
-
 
 
 
@@ -207,14 +189,14 @@ while True:
         colunaTabuleiro = comandos[2]
         rival = comandos[3]
         jogar(linhaTabuleiro, colunaTabuleiro, rival)
+    elif(comandos[0]=="Acaba"):
+        acabaJogo(comandos[1],comandos[2],comandos[3],comandos[4], comandos[5])
+    else:
+        respond_error(endereco)
 
 
- #   elif(comandos[0]=="END"):
- #       endGame(comandos[1],comandos[2],comandos[3],comandos[4])
  #   elif(comandos[0]=="KILLSERVER"):
  #       end_clients()
   #      break
-  #  else:
-  #      respond_error(endereco)
 
 servidor.close()
