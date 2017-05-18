@@ -12,6 +12,7 @@ PORTO_SERVIDOR = 5005
 IP_SERVIDOR = '127.0.0.1'
 PECA_X = "X"
 PECA_O = "O"
+TAMANHO_TABULEIRO_DEFAULF = 3
 
 cliente = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 inputs = [cliente, sys.stdin]
@@ -50,13 +51,19 @@ def registarClienteSTDIN(comprimentoMensagem):
 	return True
 
 def convidarJogadorSTDIN(comprimentoMensagem, comandos):
+	global mensagem
 	# Erro caso o comprimento da mensagem seja diferente de 2
-	if comprimentoMensagem != 3:
+	if comprimentoMensagem < 2 or comprimentoMensagem > 3:
 		mensagemErro = "Argumentos invalidos. Convide novamente o jogador."
 		error(mensagemErro)
 		return False
+
+	if comprimentoMensagem == 2:
+		mensagem = mensagem + " " + str(TAMANHO_TABULEIRO_DEFAULF)
+		tamanhoTabuleiro = TAMANHO_TABULEIRO_DEFAULF
+	else:
+		tamanhoTabuleiro = int(comandos[2])
 	
-	tamanhoTabuleiro = int(comandos[2])
 	if tamanhoTabuleiro < 3:
 		mensagemErro = "Tabuleiro demasiado pequeno."
 		error(mensagemErro)
@@ -115,7 +122,7 @@ def posicaoTabuleiro(posicao, tamanhoTabuleiro):
 		print("Tem que introduzir um número inteiro, dentro do limite do tabuleiro.")
 		return False
 	# Erro caso o número do quadrado introduzido não esteja dentro dos limites do tabuleiro
-	if posicao <= 0 or posicao > tamanhoTabuleiro:
+	if posicao <= 0 or posicao > int(tamanhoTabuleiro):
 		mensagemErro = "Jogou fora dos limites do tabuleiro."
 		error(mensagemErro)
 		return False
@@ -398,6 +405,7 @@ while True:
 					success = jogar(tabuleiro, PECA_X, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro)
 					if success == False:
 						break
+					mensagem = mensagem + rival
 					if vitoria(tabuleiro, PECA_X, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro):
 						print('Hooray! Ganhaste este jogo!')
 						mensagem = "Acaba "+nome+" "+rival+" "+comandos[1]+" "+comandos[2]+" V"
@@ -406,7 +414,6 @@ while True:
 						print('Este jogou acabou num empate!')
 						mensagem = "Acaba "+nome+" "+rival+" "+comandos[1]+" "+comandos[2]+" D"
 						aJogar = False
-					mensagem = mensagem + rival
 			elif comandos[0] == "Sair":
 				mensagem = "Sair " + rival
 
@@ -426,9 +433,6 @@ while True:
 				acknowledge("servidor")
 				break
 			elif comandos[0] == "Convidar":
-				print(comandos[1])
-				print(comandos[2])
-				print(comandos[3])
 				jogadorConvida = comandos[1]
 				jogadorConvidado = comandos[2]
 				tamanhoTabuleiro = comandos[3]

@@ -190,6 +190,7 @@ while True:
         rival = comandos[3]
         jogar(linhaTabuleiro, colunaTabuleiro, rival)
     elif(comandos[0]=="Acaba"):
+        print(comandos)
         acabaJogo(comandos[1],comandos[2],comandos[3],comandos[4], comandos[5])
     else:
         respond_error(endereco)
