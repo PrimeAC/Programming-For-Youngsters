@@ -14,6 +14,7 @@ servidor.bind(('', 5005))
 enderecos = {}  # dicionário: nome -> endereço  | Exemplo: endereços["utilizador"] = ('127.0.0.1', 17234)
 clientes = {}   # dicionário: endereço -> nome  | Exemplo: clientes[('127.0.0.1', 17234)] = "João"
 estado = {}     # dicionário: nome -> estado    | Exemplo: estado["utilizador"] = ("Ocupado" ou "Livre")
+vitorias = {}   # dicionário: nome -> vitoria   | Exemplo: vitorias["utilizador"] = (2)
 
 
 ##########################################################################################################
@@ -49,6 +50,7 @@ def registarCliente(nome, endereco):
         enderecos[nome] = endereco
         clientes[endereco] = nome
         estado[nome] = "Livre"
+        vitorias[nome] = 0
         mensagemResposta = "Registado com o nome {}".format(nome)
         print(mensagemResposta)
         mensagemResposta = "MensagemInformativa " + mensagemResposta
@@ -63,6 +65,7 @@ def removerCliente(endereco, comandos):
         del enderecos[nome]
         del clientes[endereco]
         del estado[nome]
+        del vitorias[nome]
     if len(comandos) != 1:
         rival = comandos[1]
         if estado[rival] == "Ocupado":
@@ -78,7 +81,7 @@ def listarJogadores(endereco):
     if endereco in clientes:
         mensagemResposta = "Listar "
         for nome in estado:
-            mensagemResposta = mensagemResposta + nome + " " + estado[nome] + " "
+            mensagemResposta = mensagemResposta + nome + " " + estado[nome] + " " + str(vitorias[nome]) + " "
         servidor.sendto(mensagemResposta.encode(), endereco)
     else:
         mensagemErro = "Nao tem acesso!"
@@ -141,6 +144,10 @@ def respond_error(addr):
 def acabaJogo(src, dest, linha, coluna, msg):
     estado[src] = "Livre"
     estado[dest] = "Livre"
+    if msg == 'V':
+        for utilizador in vitorias:
+            if utilizador == src:
+                vitorias[utilizador] = vitorias[utilizador] + 1
     msg = "Acaba "+src+" "+dest+" "+linha+" "+coluna+" "+msg
     servidor.sendto(msg.encode(),enderecos[dest])
 
@@ -190,7 +197,6 @@ while True:
         rival = comandos[3]
         jogar(linhaTabuleiro, colunaTabuleiro, rival)
     elif(comandos[0]=="Acaba"):
-        print(comandos)
         acabaJogo(comandos[1],comandos[2],comandos[3],comandos[4], comandos[5])
     else:
         respond_error(endereco)

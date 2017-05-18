@@ -16,6 +16,7 @@ TAMANHO_TABULEIRO_DEFAULF = 3
 
 cliente = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 inputs = [cliente, sys.stdin]
+jogadas = []
 
 
 ##########################################################################################################
@@ -136,11 +137,13 @@ def listarJogadoresSOCKET(mensagem):
 	print("Lista Jogadores:")
 	while i < len(mensagem):
 		# Se "i" for número par, mostra o nome do jogador
-		if i % 2 != 0:
+		if i % 3 == 1:
 			listarJogadores = listarJogadores + "Nome: " + mensagem[i] + " | "
 		# Caso contrário, mostra o estado para o mesmo jogador
+		elif i % 3 == 2:
+			listarJogadores = listarJogadores + "Estado: " + mensagem[i] + " | "
 		else:
-			listarJogadores = listarJogadores + "Estado: " + mensagem[i] + "\n"
+			listarJogadores = listarJogadores + "Vitoria: " + mensagem[i] + "\n"
 		i = i + 1
 	print(listarJogadores)
 	return
@@ -182,13 +185,16 @@ def respostaConviteSOCKET(jogadorConvidado, respostaConvite, tamanhoTabuleiro):
 		desenharTabuleiro(tabuleiro, tamanhoTabuleiro)                	# Desenhar o tabuleiro inicial
 	return
 
-def criaTabuleiro(tamanhoTabuleiro):
+
+'''
+def criaTabuleiro():
 	global tabuleiro
-	tabuleiro = [[0 for x in range(tamanhoTabuleiro)] for y in range(tamanhoTabuleiro)] 
-	for i in range(0, tamanhoTabuleiro):
-		for j in range(0, tamanhoTabuleiro):
+	tabuleiro = [[ 0, 0, 0], [ 0, 0, 0], [ 0, 0, 0]]
+	for i in range(3):
+		for j in range(3):
 			tabuleiro[i][j] = " "
 	return tabuleiro
+'''
 
 def desenharTabuleiro(tabuleiro, tamanho):
 	tabuleiroDesenho = "\n "
@@ -222,6 +228,8 @@ def jogar(tabuleiro, peca, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro):
 		tabuleiro[int(linhaTabuleiro) - 1][int(colunaTabuleiro) - 1] = peca
 		desenharTabuleiro(tabuleiro, tamanhoTabuleiro)
 		myTurn = False													# Passa a vez ao adversário
+		jogadas.append(int(linhaTabuleiro) - 1)
+		jogadas.append(int(colunaTabuleiro) - 1)
 	# A posição está ocupada
 	else:
 		if myTurn == True:
@@ -350,6 +358,22 @@ def tabuleiroCheio(tabuleiro, tamanho):
 	return True
 
 
+#SOLUCOES
+
+def criaTabuleiro(tamanhoTabuleiro):
+	global tabuleiro
+	tabuleiro = [[0 for x in range(tamanhoTabuleiro)] for y in range(tamanhoTabuleiro)] 
+	for i in range(tamanhoTabuleiro):
+		for j in range(tamanhoTabuleiro):
+			tabuleiro[i][j] = " "
+	return tabuleiro
+
+def remove_jogadas_antigas(tabuleiro, tamanhoTabuleiro):
+	if len(jogadas) >= int(tamanhoTabuleiro) * 4 + 2:
+		tabuleiro[int(jogadas[0])][int(jogadas[1])] = " "
+		jogadas.pop(0)
+		jogadas.pop(1)
+
 
 # CORPO PRINCIPAL
 registado = False														# Variável que indica se está registado ou não
@@ -402,15 +426,18 @@ while True:
 				else:
 					linhaTabuleiro = int(comandos[1])
 					colunaTabuleiro = int(comandos[2])
+					remove_jogadas_antigas(tabuleiro, tamanhoTabuleiro)
 					success = jogar(tabuleiro, PECA_X, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro)
 					if success == False:
 						break
 					mensagem = mensagem + rival
 					if vitoria(tabuleiro, PECA_X, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro):
+						jogadas = []
 						print('Hooray! Ganhaste este jogo!')
 						mensagem = "Acaba "+nome+" "+rival+" "+comandos[1]+" "+comandos[2]+" V"
 						aJogar = False
 					elif tabuleiroCheio(tabuleiro, tamanhoTabuleiro):
+						jogadas = []
 						print('Este jogou acabou num empate!')
 						mensagem = "Acaba "+nome+" "+rival+" "+comandos[1]+" "+comandos[2]+" D"
 						aJogar = False
@@ -448,17 +475,15 @@ while True:
 			elif comandos[0] == "Jogar":
 				linhaTabuleiro = int(comandos[1])
 				colunaTabuleiro = int(comandos[2])
+				remove_jogadas_antigas(tabuleiro, tamanhoTabuleiro)
 				jogar(tabuleiro, PECA_O, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro)
-				if vitoria(tabuleiro, PECA_O, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro):
-					print('Uhhh!!!! Que pena. Melhor sorte para a proxima ;^)')
-				elif tabuleiroCheio(tabuleiro, tamanhoTabuleiro):
-					print('Este jogou acabou num empate!')
 				myTurn = True
 				break
 			elif comandos[0] == "SairRival":
 				myTurn = False
 				aJogar = False
 				rival = ""
+				jogadas = []
 				print("Parabens, ganhou este jogo devido a desistencia do seu adversario!")
 				break
 			elif comandos[0] == "Acaba":
@@ -467,9 +492,11 @@ while True:
 				colunaTabuleiro = int(comandos[4])
 				jogar(tabuleiro, PECA_O, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro)
 				if comandos[5] == 'V':
+					jogadas = []
 					print('Uhhh!!!! Que pena. Melhor sorte para a proxima ;^)')
 					aJogar = False
 				else:
+					jogadas = []
 					print('Este jogou acabou num empate!')
 					aJogar = False
 			elif comandos[0] == "Sair":
