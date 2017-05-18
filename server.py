@@ -13,7 +13,7 @@ servidor.bind(('', 5005))
 
 enderecos = {}  # dicionário: nome -> endereço  | Exemplo: endereços["utilizador"] = ('127.0.0.1', 17234)
 clientes = {}   # dicionário: endereço -> nome  | Exemplo: clientes[('127.0.0.1', 17234)] = "João"
-estado = {}     # dicionário: nome -> estado    | Exemplo: estado["utilizador"] = ("ocupado" ou "livre")
+estado = {}     # dicionário: nome -> estado    | Exemplo: estado["utilizador"] = ("Ocupado" ou "Livre")
 
 
 ##########################################################################################################
@@ -56,13 +56,20 @@ def registarCliente(nome, endereco):
         acknowledge(endereco)
     return
 
-def removerCliente(endereco):
+def removerCliente(endereco, comandos):
     # Verificar se o endereço (utilizador) existe
     if endereco in clientes:
         nome = clientes[endereco]
         del enderecos[nome]
         del clientes[endereco]
         del estado[nome]
+    if len(comandos) != 1:
+        rival = comandos[1]
+        if estado[rival] == "Ocupado":
+            estado[rival] = "Livre"
+            enderecoRival = enderecos[rival]
+            mensagem = "SairRival"
+            servidor.sendto(mensagem.encode(), enderecoRival)
     servidor.sendto(comandos[0].encode(), endereco)
     return
 
@@ -78,7 +85,7 @@ def listarJogadores(endereco):
         error(mensagemErro, endereco)
     return
 
-def convidarJogador(endereco, jogadorConvidado):
+def convidarJogador(endereco, jogadorConvidado, tamanhoTabuleiro):
     jogadorConvida = clientes[endereco]
     # Verificar se o destinatário está na lista de endereços
     if jogadorConvidado in enderecos:
@@ -90,9 +97,9 @@ def convidarJogador(endereco, jogadorConvidado):
                 if estado[jogadorConvidado] == "Livre":
                     estado[jogadorConvida] = "Ocupado"
                     enderecoConvidado = enderecos[jogadorConvidado]
-                    mensagemConvite = "Convidar " + jogadorConvida + " " + jogadorConvidado
+                    mensagemConvite = "Convidar " + jogadorConvida + " " + jogadorConvidado + " " + tamanhoTabuleiro
                     servidor.sendto(mensagemConvite.encode(), enderecoConvidado)
-                    mensagem = "MensagemInformativa Convite enviado para " + jogadorConvidado
+                    mensagem = "MensagemInformativa Convite enviado para " + jogadorConvidado + " para um tabuleiro " + tamanhoTabuleiro + "x" + tamanhoTabuleiro
                     servidor.sendto(mensagem.encode(), endereco)
                     return
                 else:
@@ -106,14 +113,19 @@ def convidarJogador(endereco, jogadorConvidado):
     error(mensagemErro, endereco)
     return
 
-def respostaConvite(jogadorConvidado, jogadorConvida, resposta):
-    enderecoConvida = enderecos[jogadorConvida]
-    if resposta == "aceitou":
-        estado[jogadorConvidado] = "Ocupado"
+def respostaConvite(jogadorConvidado, jogadorConvida, resposta, tamanhoTabuleiro):
+
+    if jogadorConvida in enderecos:
+        enderecoConvida = enderecos[jogadorConvida]
+        if resposta == "aceitou":
+            estado[jogadorConvidado] = "Ocupado"
+        else:
+            estado[jogadorConvida] = "Livre"
+        mensagemResposta = "RespostaConvite " + jogadorConvidado + " " + resposta + " " + tamanhoTabuleiro
+        servidor.sendto(mensagemResposta.encode(), enderecoConvida)
     else:
-        estado[jogadorConvida] = "Livre"
-    mensagemResposta = "RespostaConvite " + jogadorConvidado + " " + resposta
-    servidor.sendto(mensagemResposta.encode(), enderecoConvida)
+        mensagemErro = "O jogador " + jogadorConvida + " ja nao se encontra no jogo."
+        error(mensagemErro, endereco)
     return
 
 def jogar(linhaTabuleiro, colunaTabuleiro, rival):
@@ -177,17 +189,19 @@ while True:
         nomeJogador = comandos[1]
         registarCliente(nomeJogador, endereco)
     elif comandos[0] == "Sair" :
-        removerCliente(endereco)
+        removerCliente(endereco, comandos)
     elif comandos[0] == "Listar":
         listarJogadores(endereco)
     elif comandos[0] == "Convidar":
         nomeJogador = comandos[1]
-        convidarJogador(endereco, nomeJogador)
+        tamanhoTabuleiro = comandos[2]
+        convidarJogador(endereco, nomeJogador, tamanhoTabuleiro)
     elif comandos[0] == "RespostaConvite":
         jogadorConvidado = comandos[1]
         jogadorConvida = comandos[2]
         resposta = comandos[3]
-        respostaConvite(jogadorConvidado, jogadorConvida, resposta)
+        tamanhoTabuleiro = comandos[4]
+        respostaConvite(jogadorConvidado, jogadorConvida, resposta, tamanhoTabuleiro)
     elif comandos[0] == "Jogar":
         linhaTabuleiro = comandos[1]
         colunaTabuleiro = comandos[2]
@@ -195,9 +209,6 @@ while True:
         jogar(linhaTabuleiro, colunaTabuleiro, rival)
 
 
-
- #   elif(comandos[0]=="MOV"):
- #       play(comandos[1],comandos[2],comandos[3])
  #   elif(comandos[0]=="END"):
  #       endGame(comandos[1],comandos[2],comandos[3],comandos[4])
  #   elif(comandos[0]=="KILLSERVER"):

@@ -10,7 +10,6 @@ import select
 
 PORTO_SERVIDOR = 5005
 IP_SERVIDOR = '127.0.0.1'
-TAMANHO_TABULEIRO = 4
 PECA_X = "X"
 PECA_O = "O"
 
@@ -52,8 +51,14 @@ def registarClienteSTDIN(comprimentoMensagem):
 
 def convidarJogadorSTDIN(comprimentoMensagem, comandos):
 	# Erro caso o comprimento da mensagem seja diferente de 2
-	if comprimentoMensagem != 2:
+	if comprimentoMensagem != 3:
 		mensagemErro = "Argumentos invalidos. Convide novamente o jogador."
+		error(mensagemErro)
+		return False
+	
+	tamanhoTabuleiro = int(comandos[2])
+	if tamanhoTabuleiro < 3:
+		mensagemErro = "Tabuleiro demasiado pequeno."
 		error(mensagemErro)
 		return False
 	elif registado == False:
@@ -78,17 +83,17 @@ def listarJogadoresSTDIN(comprimentoMensagem):
 		return False
 	return True
 
-def jogadaValidaSTDIN(comprimentoMensagem, comandos):
+def jogadaValidaSTDIN(comprimentoMensagem, comandos, tamanhoTabuleiro):
 	# Erro caso o comprimento da mensagem seja diferente de 2
 	if comprimentoMensagem != 3:
 		mensagemErro = "Argumentos invalidos. Insira novamente o quadrado em que quer jogar." 
 		error(mensagemErro)
 		return False
 	linhaTabuleiro = comandos[1]
-	if posicaoTabuleiro(linhaTabuleiro) == False:
+	if posicaoTabuleiro(linhaTabuleiro, tamanhoTabuleiro) == False:
 		return False
 	colunaTabuleiro = comandos[2]
-	if posicaoTabuleiro(colunaTabuleiro) == False:
+	if posicaoTabuleiro(colunaTabuleiro, tamanhoTabuleiro) == False:
 		return False
 	# Erro caso não esteja a jogar
 	elif aJogar == False:
@@ -102,7 +107,7 @@ def jogadaValidaSTDIN(comprimentoMensagem, comandos):
 		return False
 	return True
 
-def posicaoTabuleiro(posicao):
+def posicaoTabuleiro(posicao, tamanhoTabuleiro):
 	# Erro caso o segundo argumento introduzido não seja um número
 	try:
 		posicao = int(posicao)
@@ -110,7 +115,7 @@ def posicaoTabuleiro(posicao):
 		print("Tem que introduzir um número inteiro, dentro do limite do tabuleiro.")
 		return False
 	# Erro caso o número do quadrado introduzido não esteja dentro dos limites do tabuleiro
-	if posicao <= 0 or posicao > TAMANHO_TABULEIRO:
+	if posicao <= 0 or posicao > tamanhoTabuleiro:
 		mensagemErro = "Jogou fora dos limites do tabuleiro."
 		error(mensagemErro)
 		return False
@@ -133,74 +138,84 @@ def listarJogadoresSOCKET(mensagem):
 	print(listarJogadores)
 	return
 
-def conviteJogadorSOCKET(tabuleiro, jogadorConvida, jogadorConvidado):
-	global myTurn, aJogar, rival									# Variáveis globais a serem alteradas
-	print("Recebeu um convite de " + jogadorConvida + ". Para aceitar o jogo digite [S], para recusar [N].")
+def conviteJogadorSOCKET(jogadorConvida, jogadorConvidado, tamanho):
+	global myTurn, aJogar, rival, tamanhoTabuleiro						# Variáveis globais a serem alteradas
+	print("Recebeu um convite de " + jogadorConvida + " para jogar num tabuleiro " + tamanho + "x" + tamanho + ". Para aceitar o jogo digite [S], para recusar [N].")
 	# Resposta introduzida pelo jogador convidado
 	respostaConvite = sys.stdin.readline().replace("\n", "")
 	# Se a reposta for válida, "S" ou "N", uma mensagem vai ser enviada ao servidor
 	if respostaConvite == "S":
 		rival = jogadorConvida 											# Jogador rival é quem fez o convite
-		desenharTabuleiro(tabuleiro, TAMANHO_TABULEIRO)            		# Desenhar o tabuleiro inicial
-		mensagem = "RespostaConvite " + jogadorConvidado + " " + jogadorConvida + " aceitou"
+		tamanhoTabuleiro = int(tamanho)
+		tabuleiro = criaTabuleiro(tamanhoTabuleiro)
+		desenharTabuleiro(tabuleiro, tamanhoTabuleiro)            		# Desenhar o tabuleiro inicial
+		mensagem = "RespostaConvite " + jogadorConvidado + " " + jogadorConvida + " aceitou " + tamanho 
 		aJogar = True 													# Flag que indica que o jogo está a decorrer
 	# Se a resposta do jogador convidado for "N"
 	elif respostaConvite == "N":
-		mensagem = "RespostaConvite " + jogadorConvidado + " " + jogadorConvida + " recusou"
+		mensagem = "RespostaConvite " + jogadorConvidado + " " + jogadorConvida + " recusou " + tamanho
 	else:
 		mensagemErro = "Introduziu incorrectamente a resposta."
 		error(mensagemErro)
-		conviteJogadorSOCKET(tabuleiro, jogadorConvida, jogadorConvidado)
+		conviteJogadorSOCKET(jogadorConvida, jogadorConvidado, tamanho)
 		return
 	cliente.sendto(mensagem.encode(), (IP_SERVIDOR, PORTO_SERVIDOR))
 	return
 
-def respostaConviteSOCKET(jogadorConvidado, respostaConvite):
-	global myTurn, aJogar, rival										# Variáveis globais a serem alteradas
+def respostaConviteSOCKET(jogadorConvidado, respostaConvite, tamanhoTabuleiro):
+	global myTurn, aJogar, rival, tabuleiro								# Variáveis globais a serem alteradas
 	print("O jogador " + jogadorConvidado + " " + respostaConvite + " o seu convite.")
 	# Se a resposta do jogador convidado for "S", ou o convite foi aceite
 	if respostaConvite == "aceitou":
 		rival = jogadorConvidado 										# Jogador rival é quem fez o convite
 		myTurn = True 													# Flag que indica a vez de jogar
 		aJogar = True 													# Flag que indica que o jogo está a decorrer
-		tabuleiro = [[0 for x in range(TAMANHO_TABULEIRO)] for y in range(TAMANHO_TABULEIRO)] 
-		for i in range(0, TAMANHO_TABULEIRO):
-			for j in range(0, TAMANHO_TABULEIRO):
-				tabuleiro[i][j] = " "
-		desenharTabuleiro(tabuleiro, TAMANHO_TABULEIRO)                	# Desenhar o tabuleiro inicial
+		tamanhoTabuleiro = int(tamanhoTabuleiro)
+		tabuleiro = criaTabuleiro(tamanhoTabuleiro)
+		desenharTabuleiro(tabuleiro, tamanhoTabuleiro)                	# Desenhar o tabuleiro inicial
 	return
+
+def criaTabuleiro(tamanhoTabuleiro):
+	global tabuleiro
+	tabuleiro = [[0 for x in range(tamanhoTabuleiro)] for y in range(tamanhoTabuleiro)] 
+	for i in range(0, tamanhoTabuleiro):
+		for j in range(0, tamanhoTabuleiro):
+			tabuleiro[i][j] = " "
+	return tabuleiro
 
 def desenharTabuleiro(tabuleiro, tamanho):
 	tabuleiroDesenho = "\n "
+	tamanhoTabuleiro = int(tamanho)
 	# Vai percorrer todos os número de quadrados existentes no tabuleiro
-	for numeroQuadrado in range(0, tamanho*tamanho):
+	for linha in range(0, tamanhoTabuleiro):
+		for coluna in range(0, tamanhoTabuleiro):
 		# Verifica se não é o último quadrado da linha
-		if (numeroQuadrado + 1) % tamanho != 0:
-			# Vai formando uma linha do tabuleiro
-			tabuleiroDesenho = tabuleiroDesenho + tabuleiro[numeroQuadrado/tamanho][numeroQuadrado%tamanho] + ' | '
-		# É o último quadrado da linha
-		else:
-			# Acrescenta o último quadrado à linha e imprime-o
-			tabuleiroDesenho = tabuleiroDesenho + tabuleiro[numeroQuadrado/tamanho][numeroQuadrado%tamanho]
-			print(" " + tabuleiroDesenho)
-			# Se não for o último quadrado da última linha imprime um separador de linhas
-			if numeroQuadrado != tamanho*tamanho-1:
-				tracos = ''
-				for i in range(0, tamanho-1):
-					tracos = tracos + '---|'
-				print(tracos + '---')
-				# Prepara uma nova linha
-				tabuleiroDesenho = ""
+			if coluna != tamanhoTabuleiro - 1:
+				# Vai formando uma linha do tabuleiro
+				tabuleiroDesenho = tabuleiroDesenho + tabuleiro[linha][coluna] + ' | '
+			# É o último quadrado da linha
+			else:
+				# Acrescenta o último quadrado à linha e imprime-o
+				tabuleiroDesenho = tabuleiroDesenho + tabuleiro[linha][coluna]
+				print(" " + tabuleiroDesenho)
+				# Se não for o último quadrado da última linha imprime um separador de linhas
+				if (linha + 1) * (coluna + 1) - 1 != (tamanhoTabuleiro * tamanhoTabuleiro) - 1:
+					tracos = ''
+					for i in range(0, tamanhoTabuleiro - 1):
+						tracos = tracos + '---|'
+					print(tracos + '---')
+					# Prepara uma nova linha
+					tabuleiroDesenho = ""
 	return
 
-def jogar(tabuleiro, peca, linhaTabuleiro, colunaTabuleiro):
+def jogar(tabuleiro, peca, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro):
 	global myTurn														# Variável global a ser alterada
 	linhaTabuleiro = linhaTabuleiro - 1
 	colunaTabuleiro = colunaTabuleiro - 1
 	# Verificar se posição está vazia
 	if tabuleiro[linhaTabuleiro][colunaTabuleiro] == " ":
 		tabuleiro[linhaTabuleiro][colunaTabuleiro] = peca
-		desenharTabuleiro(tabuleiro, TAMANHO_TABULEIRO)
+		desenharTabuleiro(tabuleiro, tamanhoTabuleiro)
 		myTurn = False													# Passa a vez ao adversário
 	# A posição está ocupada
 	else:
@@ -219,21 +234,6 @@ def jogar(tabuleiro, peca, linhaTabuleiro, colunaTabuleiro):
 
 
 
-#def makeMove(board, letter, move):
-
-		#  if 1 <= move_number <= 9:
-		#      if board[int(move)] == " ":
-		#           board[int(move)] = letter
-			#          return True
-			#     else:
-			#         print('Postion {} is already occupied,'
-				#                            'please try another one'.format(move_number))
-			#         return False
-			# else:
-		#          print('"{}" is an invalid input number. The provided number should'
-				#        ' be from 1 to 9'.format(move_number))
-			#         return False
-
 #def isWinner(bo, le):
 					# Given a board and a player's letter, this function returns True if that player has won.
 					# We use bo instead of board and le instead of letter so we don’t have to type as much.
@@ -246,14 +246,7 @@ def jogar(tabuleiro, peca, linhaTabuleiro, colunaTabuleiro):
 		#   (bo[7] == le and bo[5] == le and bo[3] == le) or # diagonal
 		#   (bo[9] == le and bo[5] == le and bo[1] == le)) # diagonal
 
-#def getBoardCopy(board):
-					# Make a duplicate of the board list and return it the duplicate.
-	#    dupeBoard = []
 
-	#    for i in board:
-	#         dupeBoard.append(i)
-
-	#    return dupeBoard
 
 #def isSpaceFree(board, move):
 					# Return true if the passed move is free on the passed board.
@@ -280,10 +273,7 @@ registado = False														# Variável que indica se está registado ou não
 myTurn = False 															# Flag que indica a vez de jogar
 aJogar = False															# Variável que indica se se está a jogar ou não
 rival = ""																# Jogador adversário
-tabuleiro = [[0 for x in range(TAMANHO_TABULEIRO)] for y in range(TAMANHO_TABULEIRO)] 
-for i in range(0, TAMANHO_TABULEIRO):
-	for j in range(0, TAMANHO_TABULEIRO):
-		tabuleiro[i][j] = " "
+tamanhoTabuleiro = 0													# Tamanho do tabuleiro
 
 while True:
 	
@@ -322,16 +312,18 @@ while True:
 				if success == False:
 					break
 			elif comandos[0] == "Jogar":
-				success = jogadaValidaSTDIN(comprimentoMensagem, comandos)
+				success = jogadaValidaSTDIN(comprimentoMensagem, comandos, tamanhoTabuleiro)
 				if success == False:
 					break
 				else:
 					linhaTabuleiro = int(comandos[1])
 					colunaTabuleiro = int(comandos[2])
-					success = jogar(tabuleiro, PECA_X, linhaTabuleiro, colunaTabuleiro)
+					success = jogar(tabuleiro, PECA_X, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro)
 					if success == False:
 						break
 					mensagem = mensagem + rival
+			elif comandos[0] == "Sair":
+				mensagem = "Sair " + rival
 
 			cliente.sendto(mensagem.encode(), (IP_SERVIDOR, PORTO_SERVIDOR))
 
@@ -351,19 +343,27 @@ while True:
 			elif comandos[0] == "Convidar":
 				jogadorConvida = comandos[1]
 				jogadorConvidado = comandos[2]
-				conviteJogadorSOCKET(tabuleiro, jogadorConvida, jogadorConvidado)
+				tamanhoTabuleiro = comandos[3]
+				conviteJogadorSOCKET(jogadorConvida, jogadorConvidado, tamanhoTabuleiro)
 				break
 			elif comandos[0] == "RespostaConvite":
 				jogadorConvidado = comandos[1]
 				respostaConvite = comandos[2]
-				respostaConviteSOCKET(jogadorConvidado, respostaConvite)
+				tamanhoTabuleiro = comandos[3]
+				respostaConviteSOCKET(jogadorConvidado, respostaConvite, tamanhoTabuleiro)
 				acknowledge(jogadorConvidado)
 				break
 			elif comandos[0] == "Jogar":
 				linhaTabuleiro = int(comandos[1])
 				colunaTabuleiro = int(comandos[2])
-				jogar(tabuleiro, PECA_O, linhaTabuleiro, colunaTabuleiro)
+				jogar(tabuleiro, PECA_O, linhaTabuleiro, colunaTabuleiro, tamanhoTabuleiro)
 				myTurn = True
+				break
+			elif comandos[0] == "SairRival":
+				myTurn = False
+				aJogar = False
+				rival = ""
+				print("Parabens, ganhou este jogo devido a desistencia do seu adversario!")
 				break
 			elif comandos[0] == "Sair":
 				sys.exit()
@@ -371,14 +371,7 @@ while True:
 
 ############################################## STDIN ################################################
 
-#            if comandos[0] == "MOV":
-##                if length != 2:
-#                    print("Invalid arguments. Try again with two arguments")
-#                    break
-#                #msg = msg.split()
-#                move = arg[1]
-#                if gameIsPlaying:
-#                    if turn == 'yourTurn':#
+
 #                    
 	#                                           if makeMove(theBoard, player1Letter, move):
 	#                                               flag=1
